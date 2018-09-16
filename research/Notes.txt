@@ -1,0 +1,5 @@
+Notes
+
+if else statement in indexnorm2 function may not cover all possibilites
+Take note of buffer size in readCSV function
+Why are there blanks in excel file
