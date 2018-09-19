@@ -3,11 +3,12 @@ typedef struct sort_struct {
     int index;
 };
 
-void optimal_control_40_full_rel(int x_r, int x_c, double x[][x_c], int del_r, int del_c,
-    double del[][del_c], double time[], double Xeq[], double xseq[], double U_opt[], double V_opt[],
+void optimal_control_40_full_rel(int xvec_r, int xvec_c, double xvec[][xvec_c], double tvec[],
+    int del_r, int del_c,
+    double del[][del_c], double Xeq[], double xseq[], double U_opt[], double V_opt[],
     double W_opt[], double X_opt[], double X_optdel[], double Y_opt[], double Z_opt[], double inert_val[],
     int model_time, double time_step, int Afull_r, int Afull_c, double Afull[][Afull_c], int Bfull_r,
-    int Bfull_c, double Bfull[][Bfull_c], double trim_val[], double us0, int length);
+    int Bfull_c, double Bfull[][Bfull_c], double trim_val[], double us0, int length); 
 
 
 void indexnorm2(double Ji[], int p, int tr, int length, double Ji_mod[]);
