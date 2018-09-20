@@ -129,11 +129,58 @@ int main() {
         model_time, time_step, Afull_r, Afull_c, Afull, Bfull_r,
         Bfull_c, Bfull, trim_val, us0, length);
 
-    dt = tvec[length - 1] / length;    %time step (sec)
+    double dt = tvec[length - 1] / length;    //time step (sec)
     double U0_opt = inert_val[0];
     double V0_opt = inert_val[1];
     double W0_opt = inert_val[2];
     double X0_opt = inert_val[3];
     double Y0_opt = inert_val[4];
     double Z0_opt = inert_val[5];
+
+    //VARIABLE INITIALIZATION
+    //del_con=repmat(del,[1 1 tr]);     %initial optimal command
+    double del_con[del_r][del_c][tr];
+    for (int k = 0; k < tr; k++) {
+        for (int i = 0; i < del_r; i++) {
+            for (int j = 0; j < del_c; j++) {
+                del_con[i][j][k] = del[i][j];
+            }
+        }
+    }
+    // double **states = &xvec[0][0];
+    double states[xvec_r][xvec_c];
+    for (int i = 0; i < xvec_r; i++) {
+        for (int j = 0; j < xvec_c; j++) {
+            states[i][j] = xvec[i][j];
+        }
+    }
+    // states_p=repmat(xvec,[1 1 tr]);   %Predicted perturbation in states
+    double states_p[xvec_r][xvec_c][tr];
+    for (int k = 0; k < tr; k++) {
+        for (int i = 0; i < xvec_r; i++) {
+            for (int j = 0; j < xvec_c; j++) {
+                states_p[i][j][k] = xvec[i][j];
+            }
+        }
+    }
+
+    // double pathcost[del_r][del_c][tr];
+    // zeros3D(del_r, del_c, tr, pathcost);
+    //
+    // double Ji[del_r][del_c][tr];
+    // ones3D(del_r, del_c, tr, Ji);
+    //
+    // double Ji_mod[del_r][del_c][tr];
+    // ones3D(del_r, del_c, tr, Ji_mod);
+    //
+    // double ddeli_e[del_r][del_c][tr];
+    // zeros3D(del_r, del_c, tr, ddeli_e);
+    //
+    // double out_states[6][xvec_c];
+    // zeros2D(del_r, del_c, ddeli_e);
+    //
+    // double cycles[sizeof(tvec) / sizeof(tvec[0]);];
+    // for (int i = 0; i < sizeof(tvec) / sizeof(tvec[0]; i++) {
+    //     cycles[i] = 0.0;
+    // }
 }

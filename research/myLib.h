@@ -8,7 +8,7 @@ void optimal_control_40_full_rel(int xvec_r, int xvec_c, double xvec[][xvec_c], 
     double del[][del_c], double Xeq[], double xseq[], double U_opt[], double V_opt[],
     double W_opt[], double X_opt[], double X_optdel[], double Y_opt[], double Z_opt[], double inert_val[],
     int model_time, double time_step, int Afull_r, int Afull_c, double Afull[][Afull_c], int Bfull_r,
-    int Bfull_c, double Bfull[][Bfull_c], double trim_val[], double us0, int length); 
+    int Bfull_c, double Bfull[][Bfull_c], double trim_val[], double us0, int length);
 
 
 void indexnorm2(double Ji[], int p, int tr, int length, double Ji_mod[]);
@@ -25,9 +25,11 @@ void vehicle_dynamics_trapz(double* cost, int states_r, int states_c,
 void multiply(int m1, int m2, double mat1[][m2],
                   int n1, int n2, double mat2[][n2], double res[][n2]);
 
-void fill2D(int row, int col, double matrix[][col]);
+void fill1D(int length, double matrix[], double num);
 
-void fill3D(int row, int col, int depth, double matrix[][col][depth]);
+void fill2D(int row, int col, double matrix[][col], double num);
+
+void fill3D(int row, int col, int depth, double matrix[][col][depth], double num);
 
 void logspace(double start, double end, int num, double out[]);
 

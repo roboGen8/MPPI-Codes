@@ -27,21 +27,95 @@ void optimal_control_40_full_rel(int xvec_r, int xvec_c, double xvec[][xvec_c], 
         int tf = model_time;
 
         // int length = sizeof(time) / sizeof(time[0]);
-        double A_data[length];
-        double B_data[length];
-        double C_data[length];
-        double D_data[length];
-        double E_data[length];
-        double F_data[length];
-        double G_data[length];
+        // double A_data[length];
+        double X_opt_rel[length];
+        double U_opt_rel[length];
+        double Y_opt_rel[length];
+        double V_opt_rel[length];
+        double Z_opt_rel[length];
+        double W_opt_rel[length];
         //Reading data
 
         char filename[] = "Medium_40s.csv";
         printf("length = %d", length);
-        readCSV(filename, length, A_data, B_data, C_data, D_data, E_data, F_data, G_data);
-        for (int i = 0; i < length; i++) {
-            printf("\n%f", A_data[i]);
+        readCSV(filename, length, tvec, X_opt_rel, U_opt_rel, Y_opt_rel, V_opt_rel, Z_opt_rel, W_opt_rel);
+
+
+        double U_max = 0.1;
+        double V_max = 1.5;
+        double W_max = 0.1;
+        double X_max = 25000;
+        double Y_max = 1000;
+        double Z_max = 10;
+        double delb_max = 1;
+        double delc_max = 1;
+        double dela_max = 1;
+        double delp_max = 0.5;
+
+        // Xeq=zeros(1,size(time,2));
+        fill1D(sizeof(tvec) / sizeof(tvec[0]), Xeq, 0.0);
+        // xseq=zeros(1,size(time,2));
+        fill1D(sizeof(tvec) / sizeof(tvec[0]), xseq, 0.0);
+        // Snew=zeros(12,size(time,2)*12);
+        double Snew[12][12 * sizeof(tvec) / sizeof(tvec[0])];
+        fill2D(12, 12 * sizeof(tvec) / sizeof(tvec[0]), Snew, 0.0);
+        // g=zeros(12,size(time,2));
+        double g[12][sizeof(tvec) / sizeof(tvec[0])];
+        fill2D(12, sizeof(tvec) / sizeof(tvec[0]), Snew, 0.0);
+
+        for (int i = 0; i < sizeof(tvec) / sizeof(tvec[0]); i++) {
+            Xeq[i] = u0 * tvec[i];
+            xseq[i] = us0 * tvec[i];
         }
+
+        double X0_opt = X_opt_rel[0] + xseq[0];
+        X_opt[0] = 0;
+        X_optdel[0] = 0;
+        X_opt[length - 1] = X_opt_rel[length - 1] + xseq[length - 1] - X0_opt;
+
+        double U0_opt = U_opt_rel[0] + us0;
+        U_opt[0] = 0;
+
+        double Y0_opt = Y_opt_rel[0];
+        Y_opt[0] = 0;
+
+        double V0_opt = V_opt_rel[0];
+        V_opt[0] = 0;
+
+        double Z0_opt = Z_opt_rel[0];
+        Z_opt[0] = 0;
+
+        double W0_opt = W_opt_rel[0];
+        W_opt[0] = 0;
+
+        double scale = X_opt[length - 1] / (X_opt[length - 1] - Xeq[length - 1]);
+        for (int i = 1; i < length; i++) {
+            X_opt[i] = X_opt_rel[i] + xseq[i] - X0_opt;
+            X_optdel[i] = X_opt[i] / scale;
+            U_opt[i] = U_opt_rel[i] + us0 -  U0_opt;
+            Y_opt[i] = Y_opt_rel[i] - Y0_opt;
+            V_opt[i] = V_opt_rel[i] - V0_opt;
+            Z_opt[i] = Z_opt_rel[i] - Z0_opt;
+            W_opt[i] = W_opt_rel[i] - W0_opt;
+        }
+
+        inert_val[0] = U0_opt;
+        inert_val[1] = V0_opt;
+        inert_val[2] = W0_opt;
+        inert_val[3] = X0_opt;
+        inert_val[4] = Y0_opt;
+        inert_val[5] = Z0_opt;
+
+
+
+
+
+
+
+
+
+
+
 }
 
 void indexnorm2(double Ji[], int p, int tr, int length, double Ji_mod[]) {
@@ -164,20 +238,25 @@ void multiply(int m1, int m2, double mat1[][m2],
 
 }
 
+void fill1D(int length, double matrix[], double num) {
+    for (int i = 0; i < length; i++) {
+        matrix[i] = num;
+    }
+}
 
-void fill2D(int row, int col, double matrix[][col]) {
+void fill2D(int row, int col, double matrix[][col], double num) {
     for (int i = 0; i < row; i++) {
         for (int j = 0; j < col; j++) {
-            matrix[i][j] = 1.5;
+            matrix[i][j] = num;
         }
     }
 }
 
-void fill3D(int row, int col, int depth, double matrix[][col][depth]) {
+void fill3D(int row, int col, int depth, double matrix[][col][depth], double num) {
     for (int i = 0; i < row; i++) {
         for (int j = 0; j < col; j++) {
             for (int k = 0; k < depth; k++) {
-                matrix[i][j][k] = 1.5;
+                matrix[i][j][k] = num;
             }
 
         }
