@@ -37,3 +37,5 @@ int cmp(const void *a,const void *b);
 
 void readCSV(char filename[], int length, double A_data[], double B_data[], double C_data[],
     double D_data[], double E_data[], double F_data[], double G_data[]);
+
+void eye(int length, double matrix[][length]);

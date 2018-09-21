@@ -4,3 +4,11 @@ if else statement in indexnorm2 function may not cover all possibilites
 Take note of buffer size in readCSV function
 Why are there blanks in excel file
 e.g. states = xvec is this deep or shallow copy
+
+
+
+states_p - variables with p are used in MPPI
+variables without p are used in
+out_states to compare with initial trajectory
+
+save values to a seperate file

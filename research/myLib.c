@@ -106,6 +106,16 @@ void optimal_control_40_full_rel(int xvec_r, int xvec_c, double xvec[][xvec_c], 
         inert_val[4] = Y0_opt;
         inert_val[5] = Z0_opt;
 
+        double Q[6][6];
+        eye(6, Q);
+        Q[0][0] = 1 / (tf * U_max);
+        Q[1][1] = 1 / (tf * U_max);
+        Q[2][2] = 1 / (tf * U_max);
+        Q[3][3] = 1 / (tf * U_max);
+        Q[4][4] = 1 / (tf * U_max);
+        Q[5][5] = 1 / (tf * U_max);
+
+
 
 
 
@@ -401,4 +411,16 @@ void readCSV(char filename[], int length, double A_data[], double B_data[], doub
 	// fclose(f);
     //
 	// return(0);
+}
+
+void eye(int length, double matrix[][length]) {
+    for (int i = 0; i < length; i++) {
+        for (int j = 0; j < length; j++) {
+            if (i == j) {
+                matrix[i][j] = 1.0;
+            } else {
+                matrix[i][j] = 0.0;
+            }
+        }
+    }
 }
