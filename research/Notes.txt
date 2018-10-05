@@ -12,3 +12,16 @@ variables without p are used in
 out_states to compare with initial trajectory
 
 save values to a seperate file
+
+
+k=size(Snew,2)-11;
+for i=(size(time,2)-1):-1:1
+    Snew(1:12,k-12:k-1) = S(:,:,(size(time,2)-i+1));
+    z = [U_opt(i+1);V_opt(i+1);W_opt(i+1);X_optdel(i+1);Y_opt(i+1);Z_opt(i+1)];
+    g(1:12,i) = g(1:12,i+1) - (time(i+1)-time(i))*(-(Afull.' - Snew(1:12,k:k+11)*Bfull*(R\(Bfull.')))*g(1:12,i+1) + Cfull.'*Q*z);
+    k=k-12;
+end
+
+
+k is a cursor
+Q and R is weight matrices

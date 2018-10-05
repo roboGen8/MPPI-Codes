@@ -37,7 +37,6 @@ void optimal_control_40_full_rel(int xvec_r, int xvec_c, double xvec[][xvec_c], 
         //Reading data
 
         char filename[] = "Medium_40s.csv";
-        printf("length = %d", length);
         readCSV(filename, length, tvec, X_opt_rel, U_opt_rel, Y_opt_rel, V_opt_rel, Z_opt_rel, W_opt_rel);
 
 
@@ -107,14 +106,216 @@ void optimal_control_40_full_rel(int xvec_r, int xvec_c, double xvec[][xvec_c], 
         inert_val[5] = Z0_opt;
 
         double Q[6][6];
+        //This is actually Q inverse
         eye(6, Q);
-        Q[0][0] = 1 / (tf * U_max);
-        Q[1][1] = 1 / (tf * U_max);
-        Q[2][2] = 1 / (tf * U_max);
-        Q[3][3] = 1 / (tf * U_max);
-        Q[4][4] = 1 / (tf * U_max);
-        Q[5][5] = 1 / (tf * U_max);
+        Q[0][0] = (tf * U_max);
+        Q[1][1] = (tf * U_max);
+        Q[2][2] = (tf * U_max);
+        Q[3][3] = (tf * U_max);
+        Q[4][4] = (tf * U_max);
+        Q[5][5] = (tf * U_max);
 
+        double R[4][4];
+        eye(4, R);
+        //This is actually R inverse
+        R[0][0] = (tf * delb_max);
+        R[1][1] = (tf * dela_max);
+        R[2][2] = (tf * delp_max);
+        R[3][3] = (tf * delc_max);
+
+        printf("helloooooo\n%f", R[0][0]);
+
+        double Cfull[6][12] = {{0,0,0,-9.1547e-06,0.0016,0.0002,0.9988,-0.0009,0.0493,0,0,0},
+                {0,0,0,3.3324,0,-67.5899,0,-0.9998,-0.0175,0,0,0},
+                {0,0,0,0.0002,67.5899,0,0.0493,0.0175,-0.9986,0,0,0},
+                {1,0,0,0,0,0,0,0,0,0,0,0},
+                {0,1,0,0,0,0,0,0,0,0,0,0},
+                {0,0,1,0,0,0,0,0,0,0,0,0}};
+
+        printf("helloooooo\n%f", R[0][0]);
+
+        //first make S matrix [12][4800]
+        //make right most 12x12 a 0 matrix
+        //iterate from right to left by Sleft = Sright - dt * Sdot
+        //where Sdot is
+        //Sdot = -S*Alon - Alon.'*S + S*Blon*(R\(Blon.'))*S - Clon.'*Q*Clon;
+
+        double S[12][4800];
+
+        for (int i = 0; i < 12; i++) {
+            for (int j = 4788; j < 4800; j++) {
+                S[i][j] = 0;
+                // tempMatrix[i][j - 4788] = 0;
+            }
+        }
+
+        int h = 4776;
+        while (h >= 0) {
+            // //-S*Alon - Alon.'*S
+            // for (int i = 0; i < 12; i++) {
+            //     for (int j = 0; j < 12; j++) {
+            //         S[i][j + h] = 0;
+            //         for (int k = 0; k < 12; k++) {
+            //             S[i][j + h] += -1 * S[i][k + h + 12] * Afull[k][j];
+            //             S[i][j + h] += -1 * Afull[k][i] * S[k][j + h + 12];
+            //         }
+            //     }
+            // }
+            //S*Blon*(R\(Blon.'))*S
+            double temp[4][12];
+            for (int i = 0; i < 4; i++) {
+                for (int j = 0; j < 12; j++) {
+                    temp[i][j] = 0;
+                    for (int k = 0; k < 4; k++) {
+                        temp[i][j] = R[i][k] * Bfull[j][k];
+                    }
+                }
+            }
+            double temp2[12][4];
+            for (int i = 0; i < 12; i++) {
+                for (int j = 0; j < 4; j++) {
+                    temp2[i][j] = 0;
+                    for (int k = 0; k < 12; k++) {
+                        temp2[i][j] = S[i][k + h + 12] * Bfull[k][j];
+                    }
+                }
+            }
+            // printf("hellooooooooooo");
+            double temp3[12][12];
+
+            multiply(12, 4, temp2, 4, 12, temp, temp3);
+
+            double temp4[12][12];
+            for (int i = 0; i < 12; i++) {
+                for (int j = 0; j < 12; j++) {
+                    temp4[i][j] = 0;
+                    for (int k = 0; k < 12; k++) {
+                        temp4[i][j] = temp3[i][k] + S[k][j + h + 12];
+                    }
+                }
+            }
+
+            //Clon.'*Q*Clon;
+            double temp5[12][6];
+            for (int i = 0; i < 6; i++) {
+                for (int j = 0; j < 6; j++) {
+                    temp5[i][j] = 0;
+                    for (int k = 0; k < 12; k++) {
+                        temp5[i][j] = Cfull[k][i] * Q[k][j];
+                    }
+                }
+            }
+            double temp6[12][12];
+            multiply(12, 6, temp4, 6, 12, Cfull, temp6);
+
+            //-S*Alon - Alon.'*S
+            for (int i = 0; i < 12; i++) {
+                for (int j = 0; j < 12; j++) {
+                    S[i][j + h] = 0;
+                    for (int k = 0; k < 12; k++) {
+                        //Sdot
+                        S[i][j + h] += -1 * S[i][k + h + 12] * Afull[k][j];
+                        S[i][j + h] += -1 * Afull[k][i] * S[k][j + h + 12];
+                        S[i][j + h] += temp4[i][j];
+                        S[i][j + h] += temp6[i][j];
+                        //Sleft = Sright - dt * Sdot
+                        S[i][j + h] = S[i][j + h + 12] - time_step * S[i][j + h];
+                    }
+                }
+            }
+            //decerement, moving to left square
+            h = h - 12;
+        }
+
+        double U[length];
+        double V[length];
+        double W[length];
+        double x[12][length];
+        U[0] = cos(theta0)*cos(psi0)*u0 + (sin(phi0)*sin(theta0)*cos(psi0) - cos(phi0)*sin(psi0))*v0 + (cos(phi0)*sin(theta0)*cos(psi0) + sin(phi0)*sin(psi0))*w0;
+        V[0] = -(cos(theta0)*sin(psi0)*u0 + (sin(phi0)*sin(theta0)*sin(psi0) + cos(phi0)*cos(psi0))*v0 + (cos(phi0)*sin(theta0)*sin(psi0) - sin(phi0)*cos(psi0))*w0);
+        W[0] = -(-sin(theta0)*u0 + sin(phi0)*cos(theta0)*v0 + cos(phi0)*cos(theta0)*w0);
+
+        //Reuse matrices:
+        //temp is 4 x 12
+        //temp2 is 12 x 4
+        //temp3 is 12 x 12
+        //temp4 is 12 x 12
+        //temp5 is 12 x 6
+        //temp6 is 12 x 12
+        //temp7 is
+        int k = 0;
+        for (int j = 0; j < length - 1; j++) {
+            // del(1:4,j) = -(R\(Bfull.'))*Snew(1:12,k:k+11)*x(1:12,j) - (R\(Bfull.'))*g(1:12,j);
+            double temp[4][12];
+            for (int ii = 0; ii < 4; ii++) {
+                for (int jj = 0; jj < 12; jj++) {
+                    temp[ii][jj] = 0;
+                    for (int kk = 0; kk < 4; kk++) {
+                        temp[ii][jj] = R[ii][kk] * Bfull[jj][kk];
+                    }
+                }
+            }
+            double temp2[12][1];
+            for (int ii = 0; ii < 12; ii++) {
+                for (int jj = 0; jj < 1; jj++) {
+                    temp2[ii][jj] = 0;
+                    for (int kk = 0; kk < 12; kk++) {
+                        temp2[ii][jj] = Snew[ii][kk + k] * x[kk][j];
+                    }
+                }
+            }
+
+            for (int ii = 0; ii < 4; ii++) {
+                for (int jj = 0; jj < 1; jj++) {
+                    del[ii][j] = 0;
+                    for (int kk = 0; kk < 12; kk++) {
+                        del[ii][j] = -1 * temp[ii][kk] * temp2[kk][jj] - temp[ii][kk] * g[kk][j];
+                    }
+                }
+            }
+
+            // x(1:12,j+1) = x(1:12,j) + (time(j+1)-time(j))*(Afull*x(1:12,j) + Bfull*del(1:4,j));
+            for (int ii = 0; ii < 12; ii++) {
+                for (int jj = 0; jj < 1; jj++) {
+                    temp2[ii][jj] = 0;
+                    for (int kk = 0; kk < 12; kk++) {
+                        temp2[ii][jj] = Afull[ii][kk] * x[kk][jj];
+                    }
+                }
+            }
+            double temp3[12][1];
+            for (int ii = 0; ii < 12; ii++) {
+                for (int jj = 0; jj < 1; jj++) {
+                    temp3[ii][jj] = 0;
+                    for (int kk = 0; kk < 4; kk++) {
+                        temp3[ii][jj] = Bfull[ii][kk] * del[kk][j];
+                    }
+                }
+            }
+            for (int ii = 0; ii < 12; ii++) {
+                for (int jj = 0; jj < 1; jj++) {
+                    x[ii][j] = 0;
+                    for (int kk = 0; kk < 12; kk++) {
+                        x[ii][j] =  x[ii][j] + (tvec[j] + tvec[j + 1]) * temp2[kk][jj] + temp3[kk][jj];
+                    }
+                }
+            }
+
+            U[j + 1] = cos(theta0 + x[4][j + 1]) * cos(psi0 + x[5][j + 1]) * (u0 + x[6][j + 1]) + (sin(phi0 + x[3][j + 1])
+            * sin(theta0 + x[4][j + 1]) * cos(psi0 + x[5][j + 1]) - cos(phi0 + x[3][j + 1]) * sin(psi0 + x[5][j + 1]))
+            * (v0 + x[7][j + 1]) + (cos(phi0 + x[3][j + 1]) * sin(theta0 + x[4][j + 1]) * cos(psi0 + x[5][j + 1])
+            + sin(phi0 + x[3][j + 1]) * sin(psi0 + x[5][j + 1])) * (w0 + x[8][j + 1]);
+
+            V[j + 1] = -(cos(theta0 + x[4][j + 1]) * sin(psi0 + x[5][j + 1]) * (u0 + x[6][j + 1]) + (sin(phi0 + x[3][j + 1]) * sin(theta0
+                + x[4][j + 1]) * sin(psi0 + x[5][j + 1]) + cos(phi0 + x[3][j + 1]) * cos(psi0 + x[5][j + 1])) * (v0 + x[7][j + 1])
+                + (cos(phi0 + x[3][j + 1]) * sin(theta0 + x[4][j + 1]) * sin(psi0 + x[5][j + 1]) - sin(phi0 + x[3][j + 1])
+                * cos(psi0 + x[5][j + 1])) * (w0 + x[8][j + 1]));
+
+            W[k + 1] = -(-sin(theta0 + x[4][j + 1]) * (u0 + x[6][j + 1]) + sin(phi0 + x[3][j + 1]) * cos(theta0 + x[4][j + 1])
+            * (v0 + x[7][j + 1]) + cos(phi0 + x[3][j + 1]) * cos(theta0 + x[4][j + 1]) * (w0 + x[8][j + 1]));
+
+            k += 12;
+        }
 
 
 
@@ -137,10 +338,7 @@ void indexnorm2(double Ji[], int p, int tr, int length, double Ji_mod[]) {
     }
 
     qsort(Ji_struct, length, sizeof(Ji_struct[0]), cmp);
-    // printf("hello");
-    // for (int i = 0; i < length; i++) {
-    //     printf("%d\n", Ji_struct[i].index);
-    // }
+
     if (p < tr) {
         double logscale[tr];
         logspace(-3.0, 1.0, p, logscale + tr - p);
@@ -198,7 +396,6 @@ void vehicle_dynamics_trapz(double* cost, int states_r, int states_c,
     multiply(Bfull_r, Bfull_c, Bfull, del_con_r, 1, temp2, temp2x);
     for (int i = 0; i < states_r; i++) {
         states[i][j - 1] = states[i][j - 2] + dt * temp1x[i][0] + 0.5 * temp2x[i][0];
-        // printf("%f", states[i][j-1]);
     }
 
     //Line 17
@@ -279,7 +476,6 @@ void logspace(double start, double end, int num, double out[]) {
     }
     // int out_length = sizeof(out) / sizeof(out[0]);
     double step = (end - start) / (num - 1);
-    // printf("%f\n", step);
     for (int i = 0; i < num; i++) {
         out[i] = pow(10.0, start + i * step);
     }
@@ -314,14 +510,6 @@ void readCSV(char filename[], int length, double A_data[], double B_data[], doub
 
     //Can get the fieldnames here
     fgets(buffer, size, ptr);
-    // field = strtok(buffer,",");
-    // for (int i = 0; i < 22; i++) {
-    //     field = strtok(NULL,",");
-    //     printf(field);
-    //     printf("\n");
-    // }
-    // field = strtok(buffer,",");
-
 
     for (int i = 0; i < length ; i++) {
         fgets(buffer, size, ptr);
@@ -347,70 +535,8 @@ void readCSV(char filename[], int length, double A_data[], double B_data[], doub
         field = strtok(NULL, ",");
         G_data[i] = atof(field);
     }
-    // printf("length = %d", length);
-    // for (int i = 0; i < length; i++) {
-    //     printf("\n%f", A_data[i]);
-    // }
     fclose(ptr);
 
-
-    // field = strtok(buffer,",");
-    // double z = atof(field);
-    // printf(field);
-    // printf("\n%f", z);
-    // temp = atof(field);
-    // printf("%f", temp);
-
-	// char *field;
-	// int year,month,day;
-	// float high,low;
-	// char *months[] = { "January", "February", "March",
-	// 	"April", "May", "June", "July", "August",
-	// 	"September", "October", "November", "December" };
-    //
-	// /* open the CSV file */
-	// f = fopen(filename,"r");
-	// if( f == NULL)
-	// {
-	// 	printf("Unable to open file '%s'\n",filename);
-	// 	exit(1);
-	// }
-    //
-	// /* process the data */
-	// /* the file contains 5 fields in a specific order:
-	//    year,month,day,high,low
-	//    separated by commas */
-	// while(fgets(buffer,BSIZE,f))
-	// {
-	// 	/* get year */
-	// 	field=strtok(buffer,",");
-	// 	year=atoi(field);
-	// 	/* get month */
-	// 	field=strtok(NULL,",");
-	// 	month=atoi(field);
-	// 	month--;	/* for the months[] array */
-	// 	/* get day */
-	// 	field=strtok(NULL,",");
-	// 	day=atoi(field);
-	// 	/* get high */
-	// 	field=strtok(NULL,",");
-	// 	high=atof(field);
-	// 	/* get low */
-	// 	field=strtok(NULL,",");
-	// 	low=atof(field);
-	// 	/* display the result in the proper format */
-	// 	printf("%10s %2d %d:\tHigh %.1f\tLow %.1f\n",
-	// 			months[month],
-	// 			day,
-	// 			year,
-	// 			high,
-	// 			low);
-	// }
-    //
-	// /* close file */
-	// fclose(f);
-    //
-	// return(0);
 }
 
 void eye(int length, double matrix[][length]) {
