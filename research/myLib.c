@@ -123,7 +123,7 @@ void optimal_control_40_full_rel(int xvec_r, int xvec_c, double xvec[][xvec_c], 
         R[2][2] = (tf * delp_max);
         R[3][3] = (tf * delc_max);
 
-        printf("helloooooo\n%f", R[0][0]);
+        // printf("helloooooo\n%f", R[0][0]);
 
         double Cfull[6][12] = {{0,0,0,-9.1547e-06,0.0016,0.0002,0.9988,-0.0009,0.0493,0,0,0},
                 {0,0,0,3.3324,0,-67.5899,0,-0.9998,-0.0175,0,0,0},
@@ -132,7 +132,7 @@ void optimal_control_40_full_rel(int xvec_r, int xvec_c, double xvec[][xvec_c], 
                 {0,1,0,0,0,0,0,0,0,0,0,0},
                 {0,0,1,0,0,0,0,0,0,0,0,0}};
 
-        printf("helloooooo\n%f", R[0][0]);
+        // printf("helloooooo\n%f", R[0][0]);
 
         //first make S matrix [12][4800]
         //make right most 12x12 a 0 matrix
@@ -311,8 +311,9 @@ void optimal_control_40_full_rel(int xvec_r, int xvec_c, double xvec[][xvec_c], 
                 + (cos(phi0 + x[3][j + 1]) * sin(theta0 + x[4][j + 1]) * sin(psi0 + x[5][j + 1]) - sin(phi0 + x[3][j + 1])
                 * cos(psi0 + x[5][j + 1])) * (w0 + x[8][j + 1]));
 
-            W[k + 1] = -(-sin(theta0 + x[4][j + 1]) * (u0 + x[6][j + 1]) + sin(phi0 + x[3][j + 1]) * cos(theta0 + x[4][j + 1])
-            * (v0 + x[7][j + 1]) + cos(phi0 + x[3][j + 1]) * cos(theta0 + x[4][j + 1]) * (w0 + x[8][j + 1]));
+
+            W[j + 1] = -(-sin(theta0 + x[4][j + 1]) * (u0 + x[6][j + 1]) + sin(phi0 + x[3][j + 1]) * cos(theta0 + x[4][j + 1]) * (v0 + x[7][j + 1])
+            + cos(phi0 + x[3][j + 1]) * cos(theta0 + x[4][j + 1]) * (w0 + x[8][j + 1]));
 
             k += 12;
         }

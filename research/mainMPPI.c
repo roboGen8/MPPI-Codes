@@ -148,12 +148,12 @@ int main() {
         }
     }
     // double **states = &xvec[0][0];
-    double states[xvec_r][xvec_c];
-    for (int i = 0; i < xvec_r; i++) {
-        for (int j = 0; j < xvec_c; j++) {
-            states[i][j] = xvec[i][j];
-        }
-    }
+    // double states[xvec_r][xvec_c];
+    // for (int i = 0; i < xvec_r; i++) {
+    //     for (int j = 0; j < xvec_c; j++) {
+    //         states[i][j] = xvec[i][j];
+    //     }
+    // }
     // states_p=repmat(xvec,[1 1 tr]);   %Predicted perturbation in states
     double states_p[xvec_r][xvec_c][tr];
     for (int k = 0; k < tr; k++) {
@@ -165,20 +165,20 @@ int main() {
     }
 
     // double pathcost[del_r][del_c][tr];
-    // zeros3D(del_r, del_c, tr, pathcost);
-    //
+    // fill3D(del_r, del_c, tr, pathcost, 0.0);
+
     // double Ji[del_r][del_c][tr];
-    // ones3D(del_r, del_c, tr, Ji);
-    //
+    // fill3D(del_r, del_c, tr, Ji, 1.0);
+
     // double Ji_mod[del_r][del_c][tr];
-    // ones3D(del_r, del_c, tr, Ji_mod);
-    //
+    // fill3D(del_r, del_c, tr, Ji_mod, 1.0);
+
     // double ddeli_e[del_r][del_c][tr];
-    // zeros3D(del_r, del_c, tr, ddeli_e);
-    //
+    // fill3D(del_r, del_c, tr, ddeli_e, 0.0);
+
     // double out_states[6][xvec_c];
-    // zeros2D(del_r, del_c, ddeli_e);
-    //
+    // fill2D(6, xvec_c, out_states, 0.0);
+
     // double cycles[sizeof(tvec) / sizeof(tvec[0]);];
     // for (int i = 0; i < sizeof(tvec) / sizeof(tvec[0]; i++) {
     //     cycles[i] = 0.0;
