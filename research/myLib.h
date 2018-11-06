@@ -39,3 +39,5 @@ void readCSV(char filename[], int length, double A_data[], double B_data[], doub
     double D_data[], double E_data[], double F_data[], double G_data[]);
 
 void eye(int length, double matrix[][length]);
+
+double randn (double mu, double sigma);

@@ -163,10 +163,10 @@ int main() {
             }
         }
     }
-
+    //
     // double pathcost[del_r][del_c][tr];
     // fill3D(del_r, del_c, tr, pathcost, 0.0);
-
+    //
     // double Ji[del_r][del_c][tr];
     // fill3D(del_r, del_c, tr, Ji, 1.0);
 
@@ -183,4 +183,106 @@ int main() {
     // for (int i = 0; i < sizeof(tvec) / sizeof(tvec[0]; i++) {
     //     cycles[i] = 0.0;
     // }
+
+    //Placeholders
+    double azs[xvec_c];
+    fill1D(xvec_c, azs, 0);
+
+    double ws[xvec_c];
+    fill1D(xvec_c, ws, 0);
+
+    double zs[xvec_c];
+    fill1D(xvec_c, zs, 0);
+
+    double xs[xvec_c];
+    fill1D(xvec_c, xs, 0);
+
+    double ys[xvec_c];
+    fill1D(xvec_c, ys, 0);
+
+    double np[xvec_c];
+    fill1D(xvec_c, np, 0);
+
+    //Inertial calculations for initizlizations
+    double out_states[6][400];
+    out_states[0][0] = cos(theta0) * cos(psi0) * u0 + (sin(phi0) * sin(theta0) * cos(psi0) - cos(phi0) * sin(psi0)) * v0 + (cos(phi0) * sin(theta0) * cos(psi0) + sin(phi0) * sin(psi0)) * w0;
+    out_states[1][0] = -(cos(theta0)*sin(psi0)*u0 + (sin(phi0)*sin(theta0)*sin(psi0) + cos(phi0)*cos(psi0))*v0 + (cos(phi0)*sin(theta0)*sin(psi0) - sin(phi0)*cos(psi0))*w0);
+    out_states[2][0] = -(-sin(theta0)*u0 + sin(phi0)*cos(theta0)*v0 + cos(phi0)*cos(theta0)*w0);
+    out_states[3][0] = xvec[0][0];
+    out_states[4][0] = xvec[1][0];
+    out_states[5][0] = xvec[2][0];
+
+    // out_states_p=repmat(out_states,[1 1 tr]);  %Predicted output states
+    int out_states_r = sizeof(out_states) / sizeof(out_states[0]);
+    int out_states_c = sizeof(out_states[0]) / sizeof(out_states[0][0]);
+    double out_states_p[out_states_r][out_states_c][tr];
+    for (int k = 0; k < tr; k++) {
+        for (int i = 0; i < out_states_r; i++) {
+            for (int j = 0; j < out_states_c; j++) {
+                out_states_p[i][j][k] = out_states[i][j];
+            }
+        }
+    }
+
+    double cost = 0;
+
+    int s = 0;
+
+    while (s < xvec_c) {
+        srand(time(NULL));
+        double A = sdz * randn(1);
+        double f = 0.09722 * (double)rand() / 10000000000.0 + 0.125;
+        int T_2 = round((1.0 / (dt * f)) / 2);
+        int hp = (s - 1) + T_2;
+
+        if (hp < xvec_c) {
+            while (s <= hp) {
+                azs[s] = A * sin(2 * 3.14 * f * tvec[s]); //Calculates peak
+                s++;
+            }
+        } else {
+            hp = xvec_c;
+            while (s <= hp) {
+                azs[s] = A * sin(2 * 3.14 * f * tvec[s]); //Calculates peak
+                s++;
+            }
+        }
+
+        A = sdz * randn(1);
+        int ep = s + T_2;
+
+        if (ep < xvec_c) {
+            s++;
+            while (s <= ep) {
+                azs[s] = A * sin(2 * 3.14 * f * tvec[s]); //Calculates valley
+                s++;
+            }
+        } else {
+            s++;
+            ep = xvec_c;
+            while (s <= hp) {
+                azs[s] = A * sin(2 * 3.14 * f * tvec[s]); //Calculates valley
+                s++;
+            }
+        }
+        // break;
+
+
+    }
+
+    //Calculate ship's vertical velocty and Position
+    s = 1;
+    while (s <= xvec_c - 1) {
+        ws[s] = azs[s] * dt;
+        zs[s] = zs[s - 1] + ws[s] * dt;
+        s++;
+    }
+
+    //SHIP'S HORIZONTAL MOTION MODEL
+    // us = sdx * (double)rand() / 10000000000.0;
+    printf("%f", randn(0, 1));
+
+
+
+
 }
