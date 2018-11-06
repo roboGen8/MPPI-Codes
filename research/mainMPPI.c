@@ -1,4 +1,5 @@
 #include <stdio.h>
+// #include "randn.h"
 
 int main() {
     double Afull[12][12] = {{0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.9988, -0.0009, 0.0493, 0.0000, 0.0000, 0.0000},
@@ -230,7 +231,7 @@ int main() {
 
     while (s < xvec_c) {
         srand(time(NULL));
-        double A = sdz * randn(1);
+        double A = sdz * randu();
         double f = 0.09722 * (double)rand() / 10000000000.0 + 0.125;
         int T_2 = round((1.0 / (dt * f)) / 2);
         int hp = (s - 1) + T_2;
@@ -248,7 +249,7 @@ int main() {
             }
         }
 
-        A = sdz * randn(1);
+        A = sdz * randu();
         int ep = s + T_2;
 
         if (ep < xvec_c) {
@@ -280,7 +281,7 @@ int main() {
 
     //SHIP'S HORIZONTAL MOTION MODEL
     // us = sdx * (double)rand() / 10000000000.0;
-    printf("%f", randn(0, 1));
+    printf("%f", randu(0, 1));
 
 
 

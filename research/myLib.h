@@ -40,4 +40,4 @@ void readCSV(char filename[], int length, double A_data[], double B_data[], doub
 
 void eye(int length, double matrix[][length]);
 
-double randn (double mu, double sigma);
+// double randn (double mu, double sigma);
