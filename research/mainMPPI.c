@@ -280,8 +280,62 @@ int main() {
     }
 
     //SHIP'S HORIZONTAL MOTION MODEL
-    // us = sdx * (double)rand() / 10000000000.0;
-    printf("%f", randu(0, 1));
+    double us[xvec_c];
+    for (int i = 0; i < xvec_c; i++) {
+        us[i] = sdx * randu();
+    }
+    s = 1;
+    while (s <= xvec_c - 1) {
+        xs[s] = xs[s - 1] + us[s] * dt;
+        s++;
+    }
+
+    // SHIP'S LATERAL MOTION MODEL
+    double vs[xvec_c];
+    s = 1;
+    while (s <= xvec_c - 1) {
+        ys[s] = ys[s - 1] + vs[s] * dt;
+        s++;
+    }
+
+    //SENSITIVITY SELECTION FOR TRAJECTORY GENERATION
+    double rb[xvec_c];
+    double ra[xvec_c];
+    double rp[xvec_c];
+    double rc[xvec_c];
+    fill1D(xvec_c, rb, 0.1);                //Sensitivity of differential commanded longitudinal cyclic, starts at 2% of initial optimal longitudinal cyclic
+    fill1D(xvec_c, ra, 0.1);                //Sensitivity of differential commanded lateral cyclic, starts at 2% of initial optimal lateral cyclic
+    fill1D(xvec_c, rp, 0.1);                //Sensitivity of differential commanded pedal, starts at 2% of initial optimal pedal
+    fill1D(xvec_c, rc, 0.1);                //Sensitivity of differential commanded collective, starts at 10% of initial optimal collective
+    double F[(int) (model_time/time_step)];
+    logspace(-2, 0.5, (int) (model_time/time_step), F);    //weight used to trade between path cost and terminal cost
+
+    //PATH INTEGRAL MODEL
+    //R E M I N D E R index from MATLAB is 1
+    //meaning everything will now be -1 the index from MATLAB
+    for (int j = 2; j < xvec_c; j++) {
+        int n = tr;
+        int m = 1;
+        // while (n > 90 && m < 10) {
+        //     delbmax = rb
+        // }
+        double delbmax[del_c][tr];
+        double delamax[del_c][tr];
+        double delpmax[del_c][tr];
+        double delcmax[del_c][tr];
+
+        for (int indc = 0; indc < del_c; indc++) {
+            for (int indd = 0; indd < tr; indd++) {
+                delbmax[indc][indd] = rb[j - 1] * abs(del_con[0][indc][indd]);
+                delamax[indc][indd] = rb[j - 1] * abs(del_con[1][indc][indd]);
+                delpmax[indc][indd] = rb[j - 1] * abs(del_con[2][indc][indd]);
+                delcmax[indc][indd] = rb[j - 1] * abs(del_con[3][indc][indd]);
+            }
+        }
+    }
+
+    printf("hello");
+
 
 
 

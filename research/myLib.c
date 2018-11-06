@@ -8,6 +8,14 @@
 
 // time=(xlsread('Heli_Full_40KIAS_Optimal_Relative.xlsx','Medium_40s','A2:A401')).';
 
+// predicted_vehicle_state_trapz(int states_p_r, int states_p_c, double states_p[][states_p_c],
+//     int out_states_p_r, int out_states_p_c, double out_states_p[][out_states_p_c],
+//     int del_r, int del_c, double del_bi[][del_c], double del_ai[][del_c], double del_pi[][del_c],
+//     double del_ci[][del_c], double dt, int j, int Afull_r, int Afull_c, double Afull[][Afull_c],
+//     int Bfull_r, int Bfull_c, double Bfull[][Bfull_c], double trim_val[]) {
+//
+//
+// }
 
 void optimal_control_40_full_rel(int xvec_r, int xvec_c, double xvec[][xvec_c], double tvec[],
     int del_r, int del_c,

@@ -1,15 +1,7 @@
 New Notes
 Not finished:
 %%VARIABLE INITIALIZATION
-del_con=repmat(del,[1 1 tr]);     %initial optimal command
-states=xvec;    %initial states
-states_p=repmat(xvec,[1 1 tr]);   %Predicted perturbation in states
-pathcost=zeros(size(del_con));      %Initial path cost
-Ji=ones(size(del_con));      %Performance index
-Ji_mod=ones(size(del_con));  %Normalized by logarithmic scale (10^-3 to 10^1)
-ddeli_e=zeros(size(del_con));  %Exponential weighing factor, x-axis
-out_states=zeros(6,size(xvec,2));
-cycles=zeros(size(tvec));
+using randu() function from outside resource but might not be right randn function
 
 
 
