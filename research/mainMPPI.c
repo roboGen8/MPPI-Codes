@@ -313,48 +313,47 @@ int main() {
     //PATH INTEGRAL MODEL
     //R E M I N D E R index from MATLAB is 1
     //meaning everything will now be -1 the index from MATLAB
+
     for (int j = 2; j < xvec_c; j++) {
         int n = tr;
         int m = 1;
         // while (n > 90 && m < 10) {
         //     delbmax = rb
         // }
-        double delbmax[del_c][tr];
-        double delamax[del_c][tr];
-        double delpmax[del_c][tr];
-        double delcmax[del_c][tr];
 
-        double ddelb[del_c][tr];
-        double ddela[del_c][tr];
-        double ddelp[del_c][tr];
-        double ddelc[del_c][tr];
+         double ** delbmax = (double **) malloc(del_c * sizeof(double *));
+         double ** delamax = (double **) malloc(del_c * sizeof(double *));
+         double ** delpmax = (double **) malloc(del_c * sizeof(double *));
+         double ** delcmax = (double **) malloc(del_c * sizeof(double *));
 
-        double del_bi[del_c][tr];
-        double del_ai[del_c][tr];
-        double del_pi[del_c][tr];
-        double del_ci[del_c][tr];
+         double ** ddelb = (double **) malloc(del_c * sizeof(double *));
+         double ** ddela = (double **) malloc(del_c * sizeof(double *));
+         double ** ddelp = (double **) malloc(del_c * sizeof(double *));
+         double ** ddelc = (double **) malloc(del_c * sizeof(double *));
 
-
-        for (int indc = 0; indc < del_c; indc++) {
-            for (int indd = 0; indd < tr; indd++) {
-                delbmax[indc][indd] = rb[j - 1] * abs(del_con[0][indc][indd]);
-                delamax[indc][indd] = rb[j - 1] * abs(del_con[1][indc][indd]);
-                delpmax[indc][indd] = rb[j - 1] * abs(del_con[2][indc][indd]);
-                delcmax[indc][indd] = rb[j - 1] * abs(del_con[3][indc][indd]);
-
-                ddelb[indc][indd] = 2 * delbmax[indc][indd] * rand() - delbmax[indc][indd];
-                ddela[indc][indd] = 2 * delamax[indc][indd] * rand() - delamax[indc][indd];
-                ddelp[indc][indd] = 2 * delpmax[indc][indd] * rand() - delpmax[indc][indd];
-                ddelc[indc][indd] = 2 * delcmax[indc][indd] * rand() - delcmax[indc][indd];
-
-                del_bi[indc][indd] = del_con[0][indc][indd] + ddelb[indc][indd];        //Set of multiple trajectories
-                del_ai[indc][indd] = del_con[1][indc][indd] + ddela[indc][indd];
-                del_pi[indc][indd] = del_con[2][indc][indd] + ddelp[indc][indd];
-                del_ci[indc][indd] = del_con[3][indc][indd] + ddelc[indc][indd];
+         double ** del_bi = (double **) malloc(del_c * sizeof(double *));
+         double ** del_ai = (double **) malloc(del_c * sizeof(double *));
+         double ** del_pi = (double **) malloc(del_c * sizeof(double *));
+         double ** del_ci = (double **) malloc(del_c * sizeof(double *));
 
 
-            }
-        }
+         for (int i = 0; i < del_c; i++) {
+             delbmax[i] = (double *) malloc(tr * sizeof(double));
+             delamax[i] = (double *) malloc(tr * sizeof(double));
+             delpmax[i] = (double *) malloc(tr * sizeof(double));
+             delcmax[i] = (double *) malloc(tr * sizeof(double));
+
+             ddelb[i] = (double *) malloc(tr * sizeof(double));
+             ddela[i] = (double *) malloc(tr * sizeof(double));
+             ddelp[i] = (double *) malloc(tr * sizeof(double));
+             ddelc[i] = (double *) malloc(tr * sizeof(double));
+
+             del_bi[i] = (double *) malloc(tr * sizeof(double));
+             del_ai[i] = (double *) malloc(tr * sizeof(double));
+             del_pi[i] = (double *) malloc(tr * sizeof(double));
+             del_ci[i] = (double *) malloc(tr * sizeof(double));
+         }
+
 
     }
 
