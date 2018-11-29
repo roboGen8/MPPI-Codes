@@ -16,6 +16,9 @@ myLib.o:  myLib.c myLib.h
 randn.o: randn.c randn.h
 	$(CC) $(CFLAGS) -c randn.c
 
+pathInegral.o:	pathInegral.cu
+	nvcc pathInegral.cu
+
 # To start over from scratch, type 'make clean'.  This
 # removes the executable file, as well as old .o object
 # files and *~ backup files:
