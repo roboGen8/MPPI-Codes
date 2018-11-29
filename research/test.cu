@@ -12,6 +12,7 @@ void MyKernel(float* devPtr, size_t pitch, int width, int height) {
     }
 }
 
+
 int main() {
 
     int width = 64, height = 64;
