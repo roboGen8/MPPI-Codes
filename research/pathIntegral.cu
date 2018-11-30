@@ -1,6 +1,7 @@
 #include <iostream>
 #include <math.h>
 // Kernel function to add the elements of two arrays
+//Good Reference: http://developer.download.nvidia.com/compute/cuda/3_2_prod/toolkit/docs/CUDA_C_Programming_Guide.pdf
 
 __global__
 void add(int n, float *x, float *y)

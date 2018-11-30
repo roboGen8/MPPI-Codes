@@ -1,22 +1,70 @@
-// Matrices are stored in row_major order:
-// M(row, col) = *(M.elements + row * M.stride + col)
+// Matrices are stored in row-major order:
+// M(row, col) = *(M.elements + row * M.width + col)
 typedef struct {
     int width;
     int height;
-    int stride;
     float* elements;
 } Matrix;
 
-// Get a matrix element
-__device__
-float GetElement(const Matrix A, int row, int col) {
-    return A.elements[row * stride + col];
+// Thread block size
+#define BLOCK_SIZE 16
+
+// Forward declaration of the matrix multiplication Kernel
+__global__ void MatMulKernel(const Matrix, const Matrix, Matrix);
+
+// Matrix multiplication - Host code
+// Matrix dimensions are assumed to be multiples of BLOCK_SIZE
+void MatMul(const Matrix A, const Matrix B, Matrix C) {
+    // Load A and B to device Memory
+    Matrix d_A;
+    d_A.width = A.width; d_A.height = A.height;
+    size_t size = A.width * A.height * sizeof(float);
+    cudaMalloc(&d_A.elements, size);
+    cudaMemcpy(d_A.elements, A.elements, size, cudaMemcpyHostToDevice);
+    Matrix d_B;
+    d_B.width = B.width; d_B.height = B.height;
+    size = B.width * B.height * sizeof(float);
+    cudaMalloc(&d_B.elements, size);
+    cudaMemcpy(d_B.elements, B.elements, size, cudaMemcpyHostToDevice);
+
+    // Allocate C in device Memory
+    Matrix d_C;
+    d_C.width = C.width; d_C.height = C.height;
+    size = C.width * C.height * sizeof(float);
+    cudaMalloc(&d_C.elements, size);
+
+    // Invoke Kernel
+    dim3 dimBlock(BLOCK_SIZE, BLOCK_SIZE);
+    dim3 dimGrid(B.width / dimBlock.x, A.height / dimBlock.y);
+    MatMulKernel<<<dimGrid, dimBlock>>>(d_A, d_B, d_C);
+
+    // Read C from device Memory
+    cudaMemcpy(C.elements, d_C.elements, size, cudaMemcpyDeviceToHost);
+
+    // Free device memory
+    cudaFree(d_A.elements);
+    cudaFree(d_B.elements);
+    cudaFree(d_C.elements);
+
 }
 
-// Set a matrix elements
-__device__
-void SetElement(Matrix A, int row, int col, float value) {
-    A.elements[wor * A.stride + col] = value;
+// Matrix multiplication kernel called by MatMul()
+__global__
+void MatMulKernel(Matrix A, Matrix B, Matrix C) {
+    // Each thread computes one element of C
+    // by accumulating results into Cvalue
+    float Cvalue = 0;
+    int row = blockIdx.y * blockDim.y + threadIdx.y;
+    int col = blockIdx.x * blockDim.x + threadIdx.x;
+    for (int e = 0; e < A.width; ++e) {
+        Cvalue += A.elements[row * A.width + e] * B.elements[e * B.width + col];
+
+    }
+    C.elements[row * C.width + col] = Cvalue;
+
 }
 
-//Get the 
+int main() {
+    Matrix x = {.width = 2, .height = 3, elements = {1, 1, 1, 1, 1, 1}};
+    return 0;
+}
