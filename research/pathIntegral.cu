@@ -3,6 +3,13 @@
 // Kernel function to add the elements of two arrays
 //Good Reference: http://developer.download.nvidia.com/compute/cuda/3_2_prod/toolkit/docs/CUDA_C_Programming_Guide.pdf
 
+//Resource for multiply: https://github.com/sashasyedin/matrix-multiplication-with-cuda
+#include <cstdlib>
+#include <iostream>
+#include <time.h>
+#include <cuda_runtime_api.h>
+#include <stdio.h>
+
 __global__
 void add(int n, float *x, float *y)
 {
@@ -41,6 +48,48 @@ __global__ void fill3D(cudaPitchedPtr devPitchedPtr, int width, int height, int 
             }
         }
     }
+}
+
+__global__
+void fill3Dto2D(cudaPitchedPtr devPitchedPtr, int width, int height, int depth, double* devPtr2, double factor) {
+    char* devPtr = (char*)devPitchedPtr.ptr;
+    size_t pitch = devPitchedPtr.pitch;
+    size_t slicePitch = pitch * height;
+    for (int z = 0; z < depth; ++z) {
+        char* slice = devPtr + z * slicePitch;
+        for (int y = 0; y < height; ++y) {
+            double* row = (double*)(slice + y * pitch);
+            double * row_devPtr2 = (double*)((char*)devPtr2 + y * pitch);
+            for (int x = 0; x < width; ++x) {
+                // double element = row[x];
+                row_devPtr2[x] = factor * abs(row[x]);
+            }
+        }
+    }
+}
+
+
+// Matrix multiplication functions
+// c = a * b
+// a: m x n
+// b: n x k
+// c: m x k
+__global__ void mmult_kernel(int m, int n, int k, const double * a, const double * b, double * c)
+{
+	int globx = blockIdx.x * blockDim.x + threadIdx.x;
+	int globy = blockIdx.y * blockDim.y + threadIdx.y;
+
+	__shared__ int l;
+
+	for (l = 0; l < n; l++)
+		c[globx * k + globy] += a[globx * n + l] * b[l * k + globy];
+}
+
+void mmult_gpu(int m, int n, int k, const double * a, const double * b, double * c)
+{
+	dim3 dim_Grid(m, k);
+	// dim3 dim_Block(BLOCK_SIZE,BLOCK_SIZE);
+	mmult_kernel<<<1, 13>>>(m, n, k, a, b, c);
 }
 
 int main(void)
@@ -115,12 +164,13 @@ int main(void)
 
 
     for (int j = 2; j <= 400; j++) {
-        n = 100; //Counter of trajectories with final x-position outside of specified band in relation to ship's landing position
-        m=1;    //Counter for number of cycles in while loop
+        int n = 100; //Counter of trajectories with final x-position outside of specified band in relation to ship's landing position
+        int m = 1;    //Counter for number of cycles in while loop
 
 
         while (n > 90 && m < 10) {
-            delbmax = rb[j - 1] * abs(del_con)
+            fill3Dto2D<<<100, 40000>>>(del_con, width, height, 1, delbmax, rb[j - 1]);
+            break;
 
         }
     }
@@ -145,7 +195,7 @@ int main(void)
     cudaFree(del_pi);
     cudaFree(del_ci);
 
-    cudaFree(del_con)
+    // cudaFree(del_con);
 
     return 0;
 }
