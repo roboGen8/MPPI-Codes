@@ -10,6 +10,9 @@
 #include <cuda_runtime_api.h>
 #include <stdio.h>
 
+#include <stdlib.h>
+#include <time.h>
+
 __global__
 void add(int n, float *x, float *y)
 {
@@ -33,6 +36,56 @@ void fill2D(double* devPtr, size_t pitch, int width, int height) {
             // printf("%f", row[c]);
         }
     }
+}
+
+__global__
+void fill2D_specific(double* devPtr, size_t pitch, int width, int height) {
+    double Afull[12][12] = {{0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.9988, -0.0009, 0.0493, 0.0000, 0.0000, 0.0000},
+    {0.0000, 0.0000, 0.0000, 3.3325, 0.0000, -67.5899, 0.0000, -0.9998, -0.0175, 0.0000, 0.0000, 0.0000},
+    {0.0000, 0.0000, 0.0000, 0.0000, 67.5899, 0.0000, 0.0493, 0.0175, -0.9986, 0.0000, 0.0000, 0.0000},
+    {0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 1.0000, -0.0009, 0.0494},
+    {0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.9998, 0.0175},
+    {0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, -0.0176, 1.0011},
+    {-0.0000, -0.0000, 0.0002, -1.7910, -28.7478, 0.0000, -0.0156, -0.0014, 0.0264, -1.0130, 1.1241, -0.4113},
+    {0.0000, 0.0000, 0.0001, 33.1424, -0.3921, -0.0000, 0.0079, -0.1015, 0.0165, -1.5512, -1.5106, -65.9068},
+    {-0.0000, -0.0000, -0.0033, -2.6711, 1.7629, -0.0000, -0.1352, 0.0043, -0.6177, 8.8359, 68.2588, 2.0707},
+    {0.0000, 0.0000, 0.0002, -0.7252, -0.6595, -0.0000, 0.0058, -0.0292, 0.0424, -7.1172, -1.6572, 0.1983},
+    {-0.0000, -0.0000, 0.0000, 0.0642, -0.7286, 0.0000, 0.0019, 0.0059, -0.0013, 0.0097, -1.5146, -0.0941},
+    {-0.0000, -0.0000, 0.0000, -0.8489, 0.0071, 0.0000, -0.0036, 0.0167, -0.0027, -0.1995, -0.0263, -0.6115}};
+
+    double Bfull[12][4] = {{0.0000, 0.0000, 0.0000, 0.0000},
+    {0.0000, 0.0000, 0.0000, 0.0000},
+    {0.0000, 0.0000, 0.0000, 0.0000},
+    {0.0000, 0.0000, 0.0000, 0.0000},
+    {0.0000, 0.0000, 0.0000, 0.0000},
+    {0.0000, 0.0000, 0.0000, 0.0000},
+    {-0.1577, -0.0046, 0.0529, 0.0601},
+    {0.0197, 0.0977, -0.0752, 0.0082},
+    {-0.1559, 0.0106, 0.0865, -0.8894},
+    {0.0307, 0.1185, -0.0356, 0.0067},
+    {0.0339, 0.0007, -0.0022, 0.0024},
+    {-0.0004, 0.0037, 0.0222, 0.0058}};
+
+    if (width == 12) {
+        for (int r = 0; r < height; ++r) {
+            double * row = (double*)((char*)devPtr + r * pitch);
+            for (int c = 0; c < width; ++c) {
+                // double element = row[c];
+                row[c] = Afull[r][c];
+                // printf("%f", row[c]);
+            }
+        }
+    } else {
+        for (int r = 0; r < height; ++r) {
+            double * row = (double*)((char*)devPtr + r * pitch);
+            for (int c = 0; c < width; ++c) {
+                // double element = row[c];
+                row[c] = Bfull[r][c];
+                // printf("%f", row[c]);
+            }
+        }
+    }
+
 }
 
 __global__ void fill3D(cudaPitchedPtr devPitchedPtr, int width, int height, int depth) {
@@ -68,6 +121,45 @@ void fill3Dto2D(cudaPitchedPtr devPitchedPtr, int width, int height, int depth, 
     }
 }
 
+__global__
+void func1(cudaPitchedPtr devPitchedPtr, int width, int height, int depth, double* delPtr, double* ddelPtr, double factor) {
+    char* devPtr = (char*)devPitchedPtr.ptr;
+    size_t pitch = devPitchedPtr.pitch;
+    size_t slicePitch = pitch * height;
+    for (int z = 0; z < depth; ++z) {
+        char* slice = devPtr + z * slicePitch;
+        for (int y = 0; y < height; ++y) {
+            double* row = (double*)(slice + y * pitch);
+            double * delPtr_row = (double*)((char*)delPtr + y * pitch);
+            double * ddelPtr_row = (double*)((char*)ddelPtr + y * pitch);
+            for (int x = 0; x < width; ++x) {
+                // double element = row[x];
+                // factor is the random number
+                ddelPtr_row[x] = 2 * delPtr_row[x] * factor * row[x] - delPtr_row[x];
+            }
+        }
+    }
+}
+
+__global__
+void func2(cudaPitchedPtr devPitchedPtr, int width, int height, int depth, double* delPtr, double* ddelPtr, double factor) {
+    char* devPtr = (char*)devPitchedPtr.ptr;
+    size_t pitch = devPitchedPtr.pitch;
+    size_t slicePitch = pitch * height;
+    for (int z = 0; z < depth; ++z) {
+        char* slice = devPtr + z * slicePitch;
+        for (int y = 0; y < height; ++y) {
+            double* row = (double*)(slice + y * pitch);
+            double * delPtr_row = (double*)((char*)delPtr + y * pitch);
+            double * ddelPtr_row = (double*)((char*)ddelPtr + y * pitch);
+            for (int x = 0; x < width; ++x) {
+                // double element = row[x];
+                // factor is the random number
+                delPtr_row[x] = row[x] + ddelPtr_row[x];
+            }
+        }
+    }
+}
 
 // Matrix multiplication functions
 // c = a * b
@@ -92,8 +184,13 @@ void mmult_gpu(int m, int n, int k, const double * a, const double * b, double *
 	mmult_kernel<<<1, 13>>>(m, n, k, a, b, c);
 }
 
+__global__
+void predicted_vehicle_state(double* states_p, cudaPitchedPtr out_states_p, double* del_bi, double* del_ai, double* del_pi, double* del_ci, double dt, int j, double* Afull_ptr, double* Bfull_ptr, double trim_val[]) {
+    int xyz = 0;
+}
 int main(void)
 {
+
     //some variables to add values
     double *rb, *ra, *rp, *rc;
     cudaMallocManaged(&rb, 400 * sizeof(double));
@@ -154,11 +251,26 @@ int main(void)
     double* del_ci;
     cudaMallocPitch(&del_ci, &pitch, width * sizeof(double), height);
 
+
+
+    double* Afull_ptr;
+    cudaMallocPitch(&Afull_ptr, &pitch, 12 * sizeof(double), 12);
+    fill2D_specific<<<100, 40000>>>(Afull_ptr, pitch, 12, 12);
+
+    double* Bfull_ptr;
+    cudaMallocPitch(&Bfull_ptr, &pitch, 4 * sizeof(double), 12);
+    fill2D_specific<<<100, 40000>>>(Bfull_ptr, pitch, 4, 12);
+
     //3D stuff
     cudaExtent extent = make_cudaExtent(width * sizeof(double), height, depth);
     cudaPitchedPtr del_con;
     cudaMalloc3D(&del_con, extent);
     fill3D<<<100, 40000>>>(del_con, width, height, depth);
+
+
+    //other stuff
+    double trim_val[] = {67.5077, -0.0585, 3.3319, -0.0175, 0.0493, 0};
+
 
 
 
@@ -170,7 +282,31 @@ int main(void)
 
         while (n > 90 && m < 10) {
             fill3Dto2D<<<100, 40000>>>(del_con, width, height, 1, delbmax, rb[j - 1]);
-            break;
+            fill3Dto2D<<<100, 40000>>>(del_con, width, height, 2, delamax, ra[j - 1]);
+            fill3Dto2D<<<100, 40000>>>(del_con, width, height, 3, delpmax, rp[j - 1]);
+            fill3Dto2D<<<100, 40000>>>(del_con, width, height, 4, delcmax, rc[j - 1]);
+
+            srand(time(0));
+            func1<<<100, 40000>>>(del_con, width, height, 1, delbmax, ddelb, (double)rand() / 32767.0);
+            srand(time(0));
+            func1<<<100, 40000>>>(del_con, width, height, 2, delamax, ddela, (double)rand() / 32767.0);
+            srand(time(0));
+            func1<<<100, 40000>>>(del_con, width, height, 3, delpmax, ddelp, (double)rand() / 32767.0);
+            srand(time(0));
+            func1<<<100, 40000>>>(del_con, width, height, 4, delcmax, ddelc, (double)rand() / 32767.0);
+
+
+            func2<<<100, 40000>>>(del_con, width, height, 4, del_bi, ddelb, 1.0);
+            func2<<<100, 40000>>>(del_con, width, height, 4, del_ai, ddela, 1.0);
+            func2<<<100, 40000>>>(del_con, width, height, 4, del_pi, ddelp, 1.0);
+            func2<<<100, 40000>>>(del_con, width, height, 4, del_ci, ddelc, 1.0);
+
+            //Predicted vehicle state -------------------
+            predicted_vehicle_state(states_p, cudaPitchedPtr out_states_p, double* del_bi, double* del_ai, double* del_pi, double* del_ci, double dt, int j, double* Afull_ptr, double* Bfull_ptr, double trim_val[]) 
+
+
+            // break;
+
 
         }
     }
