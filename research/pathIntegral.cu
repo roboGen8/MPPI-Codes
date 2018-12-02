@@ -184,9 +184,46 @@ void mmult_gpu(int m, int n, int k, const double * a, const double * b, double *
 	mmult_kernel<<<1, 13>>>(m, n, k, a, b, c);
 }
 
+__device__
+void pvs_helper1(cudaPitchedPtr devPitchedPtr, int width, int height, int depth, double* Afull_ptr, double* Bfull_ptr, double* del_bi, double* del_pi, double* del_ci, int k, int l, int dt) {
+    char* devPtr = (char*)devPitchedPtr.ptr;
+    size_t pitch = devPitchedPtr.pitch;
+    size_t slicePitch = pitch * height;
+    for (int z = l; z < l + 1; ++z) {
+        char* slice = devPtr + z * slicePitch;
+        for (int y = 0; y < height; ++y) {
+            double* row = (double*)(slice + y * pitch);
+            for (int x = k; x < k + 1; ++x) {
+                // double element = row[x];
+                // states_p(:,k,l) = states_p(:,k-1,l) + dt*(Afull*states_p(:,k-1,l)+Bfull*0.5*([del_bi(1,k-1,l);del_ai(1,k-1,l);del_pi(1,k-1,l);del_ci(1,k-1,l)]+[del_bi(1,k,l);del_ai(1,k,l);del_pi(1,k,l);del_ci(1,k,l)]));
+
+                // row[x] = row[x - 1] + dt *
+
+            }
+        }
+    }
+}
+
 __global__
-void predicted_vehicle_state(double* states_p, cudaPitchedPtr out_states_p, double* del_bi, double* del_ai, double* del_pi, double* del_ci, double dt, int j, double* Afull_ptr, double* Bfull_ptr, double trim_val[]) {
-    int xyz = 0;
+void predicted_vehicle_state(cudaPitchedPtr states_p, cudaPitchedPtr out_states_p, double* del_bi, double* del_ai, double* del_pi, double* del_ci, double dt, int j, double* Afull_ptr, double* Bfull_ptr, double trim_val[]) {
+    double u0 = trim_val[0];
+    double v0 = trim_val[1];
+    double w0 = trim_val[2];
+    double phi0 = trim_val[3];
+    double theta0 = trim_val[4];
+    double psi0 = trim_val[5];
+
+    //Calculates vehicle prdicted state based on vehicle dynamics
+    for (int k = j; k <= 400; k++) {
+        for (int l = 1; l <= 100; l++) {
+            // states_p(:,k,l) = states_p(:,k-1,l) + dt*(Afull*states_p(:,k-1,l)+Bfull*0.5*([del_bi(1,k-1,l);del_ai(1,k-1,l);del_pi(1,k-1,l);del_ci(1,k-1,l)]+[del_bi(1,k,l);del_ai(1,k,l);del_pi(1,k,l);del_ci(1,k,l)]));
+
+            pvs_helper1(states_p, 400, 12, 100, Afull_ptr, Bfull_ptr, del_bi, del_pi, del_ci, k, l, dt);
+            void mmult_gpu(int m, int n, int k, const double * a, const double * b, double * c);
+
+
+        }
+    }
 }
 int main(void)
 {
@@ -262,10 +299,20 @@ int main(void)
     fill2D_specific<<<100, 40000>>>(Bfull_ptr, pitch, 4, 12);
 
     //3D stuff
-    cudaExtent extent = make_cudaExtent(width * sizeof(double), height, depth);
+    cudaExtent extent = make_cudaExtent(400 * sizeof(double), 4, 100);
     cudaPitchedPtr del_con;
     cudaMalloc3D(&del_con, extent);
-    fill3D<<<100, 40000>>>(del_con, width, height, depth);
+    fill3D<<<100, 40000>>>(del_con, 400, 4, 100);
+
+    cudaExtent extent2 = make_cudaExtent(400 * sizeof(double), 12, 100);
+    cudaPitchedPtr states_p;
+    cudaMalloc3D(&states_p, extent2);
+    fill3D<<<100, 40000>>>(states_p, 400, 12, 100);
+
+    cudaExtent extent3 = make_cudaExtent(400 * sizeof(double), 6, 100);
+    cudaPitchedPtr out_states_p;
+    cudaMalloc3D(&out_states_p, extent3);
+    fill3D<<<100, 40000>>>(out_states_p, 400, 6, 100);
 
 
     //other stuff
@@ -302,7 +349,9 @@ int main(void)
             func2<<<100, 40000>>>(del_con, width, height, 4, del_ci, ddelc, 1.0);
 
             //Predicted vehicle state -------------------
-            predicted_vehicle_state(states_p, cudaPitchedPtr out_states_p, double* del_bi, double* del_ai, double* del_pi, double* del_ci, double dt, int j, double* Afull_ptr, double* Bfull_ptr, double trim_val[]) 
+            // void predicted_vehicle_state(double* states_p, cudaPitchedPtr out_states_p, double* del_bi, double* del_ai, double* del_pi, double* del_ci, double dt, int j, double* Afull_ptr, double* Bfull_ptr, double trim_val[])
+            double dt = 0.1;
+            predicted_vehicle_state<<<100, 40000>>>(states_p, out_states_p, del_bi, del_ai, del_pi, del_ci, dt, j, Afull_ptr, Bfull_ptr, trim_val);
 
 
             // break;
