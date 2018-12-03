@@ -13,6 +13,32 @@
 #include <stdlib.h>
 #include <time.h>
 
+double Afull[12][12] = {{0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.9988, -0.0009, 0.0493, 0.0000, 0.0000, 0.0000},
+{0.0000, 0.0000, 0.0000, 3.3325, 0.0000, -67.5899, 0.0000, -0.9998, -0.0175, 0.0000, 0.0000, 0.0000},
+{0.0000, 0.0000, 0.0000, 0.0000, 67.5899, 0.0000, 0.0493, 0.0175, -0.9986, 0.0000, 0.0000, 0.0000},
+{0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 1.0000, -0.0009, 0.0494},
+{0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.9998, 0.0175},
+{0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, -0.0176, 1.0011},
+{-0.0000, -0.0000, 0.0002, -1.7910, -28.7478, 0.0000, -0.0156, -0.0014, 0.0264, -1.0130, 1.1241, -0.4113},
+{0.0000, 0.0000, 0.0001, 33.1424, -0.3921, -0.0000, 0.0079, -0.1015, 0.0165, -1.5512, -1.5106, -65.9068},
+{-0.0000, -0.0000, -0.0033, -2.6711, 1.7629, -0.0000, -0.1352, 0.0043, -0.6177, 8.8359, 68.2588, 2.0707},
+{0.0000, 0.0000, 0.0002, -0.7252, -0.6595, -0.0000, 0.0058, -0.0292, 0.0424, -7.1172, -1.6572, 0.1983},
+{-0.0000, -0.0000, 0.0000, 0.0642, -0.7286, 0.0000, 0.0019, 0.0059, -0.0013, 0.0097, -1.5146, -0.0941},
+{-0.0000, -0.0000, 0.0000, -0.8489, 0.0071, 0.0000, -0.0036, 0.0167, -0.0027, -0.1995, -0.0263, -0.6115}};
+
+double Bfull[12][4] = {{0.0000, 0.0000, 0.0000, 0.0000},
+{0.0000, 0.0000, 0.0000, 0.0000},
+{0.0000, 0.0000, 0.0000, 0.0000},
+{0.0000, 0.0000, 0.0000, 0.0000},
+{0.0000, 0.0000, 0.0000, 0.0000},
+{0.0000, 0.0000, 0.0000, 0.0000},
+{-0.1577, -0.0046, 0.0529, 0.0601},
+{0.0197, 0.0977, -0.0752, 0.0082},
+{-0.1559, 0.0106, 0.0865, -0.8894},
+{0.0307, 0.1185, -0.0356, 0.0067},
+{0.0339, 0.0007, -0.0022, 0.0024},
+{-0.0004, 0.0037, 0.0222, 0.0058}};
+
 __global__
 void add(int n, float *x, float *y)
 {
@@ -184,28 +210,54 @@ void mmult_gpu(int m, int n, int k, const double * a, const double * b, double *
 	mmult_kernel<<<1, 13>>>(m, n, k, a, b, c);
 }
 
-__device__
-void pvs_helper1(cudaPitchedPtr devPitchedPtr, int width, int height, int depth, double* Afull_ptr, double* Bfull_ptr, double* del_bi, double* del_pi, double* del_ci, int k, int l, int dt) {
-    char* devPtr = (char*)devPitchedPtr.ptr;
-    size_t pitch = devPitchedPtr.pitch;
-    size_t slicePitch = pitch * height;
-    for (int z = l; z < l + 1; ++z) {
-        char* slice = devPtr + z * slicePitch;
-        for (int y = 0; y < height; ++y) {
-            double* row = (double*)(slice + y * pitch);
-            for (int x = k; x < k + 1; ++x) {
-                // double element = row[x];
-                // states_p(:,k,l) = states_p(:,k-1,l) + dt*(Afull*states_p(:,k-1,l)+Bfull*0.5*([del_bi(1,k-1,l);del_ai(1,k-1,l);del_pi(1,k-1,l);del_ci(1,k-1,l)]+[del_bi(1,k,l);del_ai(1,k,l);del_pi(1,k,l);del_ci(1,k,l)]));
-
-                // row[x] = row[x - 1] + dt *
-
-            }
-        }
-    }
-}
+// __device__
+// void pvs_helper1(cudaPitchedPtr devPitchedPtr, int width, int height, int depth, double* Afull_ptr, double* Bfull_ptr, double* del_bi, double* del_pi, double* del_ci, int k, int l, int dt) {
+//     char* devPtr = (char*)devPitchedPtr.ptr;
+//     size_t pitch = devPitchedPtr.pitch;
+//     size_t slicePitch = pitch * height;
+//     for (int z = l; z < l + 1; ++z) {
+//         char* slice = devPtr + z * slicePitch;
+//         for (int y = 0; y < height; ++y) {
+//             double* row = (double*)(slice + y * pitch);
+//             for (int x = k; x < k + 1; ++x) {
+//                 // double element = row[x];
+//                 // states_p(:,k,l) = states_p(:,k-1,l) + dt*(Afull*states_p(:,k-1,l)+Bfull*0.5*([del_bi(1,k-1,l);del_ai(1,k-1,l);del_pi(1,k-1,l);del_ci(1,k-1,l)]+[del_bi(1,k,l);del_ai(1,k,l);del_pi(1,k,l);del_ci(1,k,l)]));
+//
+//                 // row[x] = row[x - 1] + dt *
+//
+//             }
+//         }
+//     }
+// }
 
 __global__
 void predicted_vehicle_state(cudaPitchedPtr states_p, cudaPitchedPtr out_states_p, double* del_bi, double* del_ai, double* del_pi, double* del_ci, double dt, int j, double* Afull_ptr, double* Bfull_ptr, double trim_val[]) {
+    double Afull[12][12] = {{0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.9988, -0.0009, 0.0493, 0.0000, 0.0000, 0.0000},
+    {0.0000, 0.0000, 0.0000, 3.3325, 0.0000, -67.5899, 0.0000, -0.9998, -0.0175, 0.0000, 0.0000, 0.0000},
+    {0.0000, 0.0000, 0.0000, 0.0000, 67.5899, 0.0000, 0.0493, 0.0175, -0.9986, 0.0000, 0.0000, 0.0000},
+    {0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 1.0000, -0.0009, 0.0494},
+    {0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.9998, 0.0175},
+    {0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, -0.0176, 1.0011},
+    {-0.0000, -0.0000, 0.0002, -1.7910, -28.7478, 0.0000, -0.0156, -0.0014, 0.0264, -1.0130, 1.1241, -0.4113},
+    {0.0000, 0.0000, 0.0001, 33.1424, -0.3921, -0.0000, 0.0079, -0.1015, 0.0165, -1.5512, -1.5106, -65.9068},
+    {-0.0000, -0.0000, -0.0033, -2.6711, 1.7629, -0.0000, -0.1352, 0.0043, -0.6177, 8.8359, 68.2588, 2.0707},
+    {0.0000, 0.0000, 0.0002, -0.7252, -0.6595, -0.0000, 0.0058, -0.0292, 0.0424, -7.1172, -1.6572, 0.1983},
+    {-0.0000, -0.0000, 0.0000, 0.0642, -0.7286, 0.0000, 0.0019, 0.0059, -0.0013, 0.0097, -1.5146, -0.0941},
+    {-0.0000, -0.0000, 0.0000, -0.8489, 0.0071, 0.0000, -0.0036, 0.0167, -0.0027, -0.1995, -0.0263, -0.6115}};
+
+    double Bfull[12][4] = {{0.0000, 0.0000, 0.0000, 0.0000},
+    {0.0000, 0.0000, 0.0000, 0.0000},
+    {0.0000, 0.0000, 0.0000, 0.0000},
+    {0.0000, 0.0000, 0.0000, 0.0000},
+    {0.0000, 0.0000, 0.0000, 0.0000},
+    {0.0000, 0.0000, 0.0000, 0.0000},
+    {-0.1577, -0.0046, 0.0529, 0.0601},
+    {0.0197, 0.0977, -0.0752, 0.0082},
+    {-0.1559, 0.0106, 0.0865, -0.8894},
+    {0.0307, 0.1185, -0.0356, 0.0067},
+    {0.0339, 0.0007, -0.0022, 0.0024},
+    {-0.0004, 0.0037, 0.0222, 0.0058}};
+
     double u0 = trim_val[0];
     double v0 = trim_val[1];
     double w0 = trim_val[2];
@@ -213,18 +265,86 @@ void predicted_vehicle_state(cudaPitchedPtr states_p, cudaPitchedPtr out_states_
     double theta0 = trim_val[4];
     double psi0 = trim_val[5];
 
-    //Calculates vehicle prdicted state based on vehicle dynamics
-    for (int k = j; k <= 400; k++) {
-        for (int l = 1; l <= 100; l++) {
-            // states_p(:,k,l) = states_p(:,k-1,l) + dt*(Afull*states_p(:,k-1,l)+Bfull*0.5*([del_bi(1,k-1,l);del_ai(1,k-1,l);del_pi(1,k-1,l);del_ci(1,k-1,l)]+[del_bi(1,k,l);del_ai(1,k,l);del_pi(1,k,l);del_ci(1,k,l)]));
+    char* states_p_ptr = (char*) states_p.ptr;
+    size_t states_p_pitch = states_p.pitch;
+    size_t states_p_slicePitch = states_p_pitch * 12;
 
-            pvs_helper1(states_p, 400, 12, 100, Afull_ptr, Bfull_ptr, del_bi, del_pi, del_ci, k, l, dt);
-            void mmult_gpu(int m, int n, int k, const double * a, const double * b, double * c);
+    char* out_states_p_ptr = (char*) out_states_p.ptr;
+    size_t out_states_p_pitch = out_states_p.pitch;
+    size_t out_states_p_slicePitch = out_states_p_pitch * 6;
+
+    //depth
+    for (int l = 0; l < 100; ++l) {
+        char* states_p_slice = states_p_ptr + l * states_p_slicePitch;
+        char* out_states_p_slice = out_states_p_ptr + l * out_states_p_slicePitch;
+
+        double* row1 = (double*)(states_p_slice + 0 * states_p_pitch);
+        double* row2 = (double*)(states_p_slice + 1 * states_p_pitch);
+        double* row3 = (double*)(states_p_slice + 2 * states_p_pitch);
+        double* row4 = (double*)(states_p_slice + 3 * states_p_pitch);
+        double* row5 = (double*)(states_p_slice + 4 * states_p_pitch);
+        double* row6 = (double*)(states_p_slice + 5 * states_p_pitch);
+        double* row7 = (double*)(states_p_slice + 6 * states_p_pitch);
+        double* row8 = (double*)(states_p_slice + 7 * states_p_pitch);
+        double* row9 = (double*)(states_p_slice + 8 * states_p_pitch);
+        double* row10 = (double*)(states_p_slice + 9 * states_p_pitch);
+        double* row11 = (double*)(states_p_slice + 10 * states_p_pitch);
+        double* row12 = (double*)(states_p_slice + 11 * states_p_pitch);
+
+        double* row_out1 = (double*)(out_states_p_slice + 0 * out_states_p_pitch);
+        double* row_out2 = (double*)(out_states_p_slice + 1 * out_states_p_pitch);
+        double* row_out3 = (double*)(out_states_p_slice + 2 * out_states_p_pitch);
+        double* row_out4 = (double*)(out_states_p_slice + 3 * out_states_p_pitch);
+        double* row_out5 = (double*)(out_states_p_slice + 4 * out_states_p_pitch);
+        double* row_out6 = (double*)(out_states_p_slice + 5 * out_states_p_pitch);
+        //height or row
+        for (int m = 0; m < 12; ++m) {
+            double* row = (double*)(states_p_slice + m * states_p_pitch);
+            // double* row_out = (double*)(out_states_p_slice + m * out_states_p_pitch);
+            double * row_del_bi = (double*)((char*)del_bi + 0 * states_p_pitch);
+            double * row_del_ai = (double*)((char*)del_ai + 0 * states_p_pitch);
+            double * row_del_pi = (double*)((char*)del_pi + 0 * states_p_pitch);
+            double * row_del_ci = (double*)((char*)del_ci + 0 * states_p_pitch);
+
+            //width or column
+            for (int k = j - 1; k < 400; ++k) {
+                //Afull * states_p[k -1]
+                double temp1 = 0;
+                for(int indx1 = 0; indx1 < 12; indx1++) {
+                    temp1 += Afull[m][indx1] * row[k - 1];
+                }
+
+                double temp2 = 0;
+                temp2 = Bfull[m][0] * 0.5 * (row_del_bi[k - 1] + row_del_bi[k])
+                        + Bfull[m][1] * 0.5 * (row_del_ai[k - 1] + row_del_ai[k])
+                        + Bfull[m][2] * 0.5 * (row_del_pi[k - 1] + row_del_pi[k])
+                        + Bfull[m][3] * 0.5 * (row_del_ci[k - 1] + row_del_ci[k]);
+
+                row[k] = row[k - 1] + dt * (temp1 + temp2);
 
 
+                row_out1[k] = cos(theta0+row5[k])*cos(psi0+row6[k])*(u0+row7[k]) + (sin(phi0+row4[k])*sin(theta0+row5[k])*cos(psi0+row6[k])
+                            - cos(phi0+row4[k])*sin(psi0+row6[k]))*(v0+row8[k]) + (cos(phi0+row4[k])*sin(theta0+row5[k])*cos(psi0+row6[k])
+                            + sin(phi0+row4[k])*sin(psi0+row6[k]))*(w0+row9[k]);
+
+                row_out2[k] = -(cos(theta0+row5[k])*sin(psi0+row6[k])*(u0+row7[k]) + (sin(phi0+row4[k])*sin(theta0+row5[k])*sin(psi0+row6[k])
+                        + cos(phi0+row4[k])*cos(psi0+row6[k]))*(v0+row8[k]) + (cos(phi0+row4[k])*sin(theta0+row5[k])*sin(psi0+row6[k])
+                        - sin(phi0+row4[k])*cos(psi0+row6[k]))*(w0+row9[k]));
+
+                row_out3[k] = -(-sin(theta0+row5[k])*(u0+row7[k]) + sin(phi0+row4[k])*cos(theta0+row5[k])*(v0+row8[k])
+                    + cos(phi0+row4[k])*cos(theta0+row5[k])*(w0+row9[k]));
+
+                row_out4[k] = row1[k];
+                row_out5[k] = row2[k];
+                row_out6[k] = row3[k];
+                // break;
+            }
         }
     }
+
+
 }
+
 int main(void)
 {
 
@@ -354,7 +474,7 @@ int main(void)
             predicted_vehicle_state<<<100, 40000>>>(states_p, out_states_p, del_bi, del_ai, del_pi, del_ci, dt, j, Afull_ptr, Bfull_ptr, trim_val);
 
 
-            // break;
+            break;
 
 
         }
