@@ -1,5 +1,6 @@
 #include <iostream>
 #include <math.h>
+
 // Kernel function to add the elements of two arrays
 //Good Reference: http://developer.download.nvidia.com/compute/cuda/3_2_prod/toolkit/docs/CUDA_C_Programming_Guide.pdf
 
@@ -345,6 +346,51 @@ void predicted_vehicle_state(cudaPitchedPtr states_p, cudaPitchedPtr out_states_
 
 }
 
+
+__global__
+void helper1(cudaPitchedPtr states_p, cudaPitchedPtr out_states_p, double dt, int j, double* del_bi, double* del_ai,
+    double* del_pi, double* del_ci, double* X_optdel, double* U_opt, double* V_opt, double* Y_opt, double* W_opt, double* Z_opt) {
+    int n = 0;  //Starts counter for trajectories with final position outside of specified band
+    double U0_opt = 67.5;
+    double V0_opt = 0;
+    double W0_opt = 0;
+    double Z0_opt = 100;
+    char* out_states_p_ptr = (char*) out_states_p.ptr;
+    size_t out_states_p_pitch = out_states_p.pitch;
+    size_t out_states_p_slicePitch = out_states_p_pitch * 6;
+    //Calculates the performance index for each trajectory
+
+    for (int l = 1; l < 100; l++) {
+        double pc[4] = {};
+        char* out_states__p_slice = out_states_p_ptr + l * out_states_p_slicePitch;
+        double* row_out1 = (double*)(out_states__p_slice + 0 * out_states_p_pitch);
+        double* row_out2 = (double*)(out_states__p_slice + 1 * out_states_p_pitch);
+        double* row_out3 = (double*)(out_states__p_slice + 2 * out_states_p_pitch);
+        double* row_out4 = (double*)(out_states__p_slice + 3 * out_states_p_pitch);
+        double* row_out5 = (double*)(out_states__p_slice + 4 * out_states_p_pitch);
+        double* row_out6 = (double*)(out_states__p_slice + 5 * out_states_p_pitch);
+
+        double * row_del_bi = (double*)((char*)del_bi + 0 * out_states_p_pitch);
+        double * row_del_ai = (double*)((char*)del_ai + 0 * out_states_p_pitch);
+        double * row_del_pi = (double*)((char*)del_pi + 0 * out_states_p_pitch);
+        double * row_del_ci = (double*)((char*)del_ci + 0 * out_states_p_pitch);
+
+        for (int k = j - 1; k < 400; k++) {
+            // pc(1)=pc(1)+0.5*dt*(0.025*del_bi(1,k,l)^2+0.25*((out_states_p(1,j,l)-(U0_opt+U_opt(j)))^2)+(1e-06)*((out_states_p(4,j,l)-X_optdel(j))^2));   %Calculates path cost for each trajectory
+            pc[0] = pc[0] + 0.5 * dt * (0.025 * row_del_bi[k] * row_del_bi[k] + 0.25 * ((row_out1[j - 1]) - (U0_opt + U_opt[j - 1])) * ((row_out1[j - 1]) - (U0_opt + U_opt[j - 1])) + (0.000001) *(row_out4[j - 1] - X_optdel[j - 1]) * (row_out4[j - 1] - X_optdel[j - 1]));
+            // pc(2)=pc(2)+0.5*dt*(0.025*del_ai(1,k,l)^2+0.0167*((out_states_p(2,j,l)-(V0_opt+V_opt(j)))^2)+(2.5e-05)*((out_states_p(5,j,l)-Y_opt(j))^2));   %Calculates path cost for each trajectory
+            pc[1] = pc[1] + 0.5 * dt * (0.025 * row_del_ai[k] * row_del_bi[k] + 0.0167 * ((row_out2[j - 1]) - (V0_opt + V_opt[j - 1])) * ((row_out1[j - 1]) - (V0_opt + V_opt[j - 1])) + (0.000025) *(row_out5[j - 1] - Y_opt[j - 1]) * (row_out5[j - 1] - Y_opt[j - 1]));
+            // pc(3)=pc(3)+0.5*dt*(0.05*del_pi(1,k,l)^2);   %Calculates path cost for each trajectory
+            pc[2] = pc[2] + 0.5 * dt * (0.05 * row_del_pi[k] * row_del_pi[k]) * (0.05 * row_del_pi[k] * row_del_pi[k]);
+            // pc(4)=pc(4)+0.5*dt*(0.025*del_ci(1,k,l)^2+0.25*((out_states_p(4,j,l)-(W0_opt+W_opt(j)))^2)+0.0025*((out_states_p(6,j,l)-Z_opt(j))^2));   %Calculates path cost for each trajectory
+            pc[3] = pc[3] + 0.5 * dt * (0.025 * row_del_ci[k] * row_del_ci[k] + 0.25 * ((row_out4[j - 1]) - (W0_opt + W_opt[j - 1])) * ((row_out4[j - 1]) - (W0_opt + W_opt[j - 1])) + (0.00025) *(row_out6[j - 1] - Z_opt[j - 1]) * (row_out5[j - 1] - Z_opt[j - 1]));
+        }
+    }
+}
+
+
+
+
 int main(void)
 {
 
@@ -368,6 +414,23 @@ int main(void)
     // Host code
     //width is columns and height is rows
     int height = 400, width = 100, depth = 4;
+
+    //1D stuff
+    double* X_optdel;
+    size_t optdel_size = 400 * sizeof(double);
+    cudaMalloc(&X_optdel, optdel_size);
+    double* U_opt;
+    cudaMalloc(&U_opt, optdel_size);
+    double* V_opt;
+    cudaMalloc(&V_opt, optdel_size);
+    double* Y_opt;
+    cudaMalloc(&Y_opt, optdel_size);
+    double* W_opt;
+    cudaMalloc(&W_opt, optdel_size);
+    double* Z_opt;
+    cudaMalloc(&Z_opt, optdel_size);
+
+
     //2D stuff
     size_t pitch;
 
@@ -473,8 +536,17 @@ int main(void)
             double dt = 0.1;
             predicted_vehicle_state<<<100, 40000>>>(states_p, out_states_p, del_bi, del_ai, del_pi, del_ci, dt, j, Afull_ptr, Bfull_ptr, trim_val);
 
-
-            break;
+            // n = 0;  //Starts counter for trajectories with final position outside of specified band
+            // //Calculates the performance index for each trajectory
+            // for (int l = 2; l <= 100; l++) {
+            //     double pc[] = {0, 0, 0, 0};
+            //     for (int k = j; k <= 400; k++) {
+            //         pc[0] =
+            //     }
+            // }
+            // break;
+            helper1<<<100, 40000>>>(states_p, out_states_p, dt, j, del_bi, del_ai,
+                del_pi, del_ci, X_optdel, U_opt, V_opt, Y_opt, W_opt, Z_opt);
 
 
         }
