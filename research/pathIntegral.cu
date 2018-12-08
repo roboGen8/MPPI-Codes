@@ -348,32 +348,62 @@ void predicted_vehicle_state(cudaPitchedPtr states_p, cudaPitchedPtr out_states_
 
 
 __global__
-void helper1(cudaPitchedPtr states_p, cudaPitchedPtr out_states_p, double dt, int j, double* del_bi, double* del_ai,
-    double* del_pi, double* del_ci, double* X_optdel, double* U_opt, double* V_opt, double* Y_opt, double* W_opt, double* Z_opt) {
-    int n = 0;  //Starts counter for trajectories with final position outside of specified band
+void helper1(cudaPitchedPtr Ji, cudaPitchedPtr out_states_p, double dt, int j, double* del_bi, double* del_ai,
+    double* del_pi, double* del_ci, double* X_optdel, double* U_opt, double* V_opt, double* Y_opt, double* W_opt, double* Z_opt,
+    int* n) {
+    // int n = 0;  //Starts counter for trajectories with final position outside of specified band
     double U0_opt = 67.5;
     double V0_opt = 0;
     double W0_opt = 0;
+    double X0_opt = -1100;
+    double Y0_opt = 550;
     double Z0_opt = 100;
     char* out_states_p_ptr = (char*) out_states_p.ptr;
     size_t out_states_p_pitch = out_states_p.pitch;
     size_t out_states_p_slicePitch = out_states_p_pitch * 6;
+
+    char* Ji_ptr = (char*) Ji.ptr;
+    size_t Ji_pitch = Ji.pitch;
+    size_t Ji_slicePitch = Ji_pitch * 6;
+
+    double band_u = 3;
+    double band_v = 3;
+    double band_w = 3;
+    double band_x = 5;
+    double band_y = 5;
+    double band_z = 5;
+
+    double us0 = 33.49;
     //Calculates the performance index for each trajectory
+    //These should be fixed by Malloc
+    double pathcost[4][400][100];
+    double us[400];
+    double xeq[400];
+    double xseq[400];
+    double xs[400];
+    double vs[400];
+    double ys[400];
+    double ws[400];
+    double zs[400];
+    double F[400];
 
     for (int l = 1; l < 100; l++) {
         double pc[4] = {};
-        char* out_states__p_slice = out_states_p_ptr + l * out_states_p_slicePitch;
-        double* row_out1 = (double*)(out_states__p_slice + 0 * out_states_p_pitch);
-        double* row_out2 = (double*)(out_states__p_slice + 1 * out_states_p_pitch);
-        double* row_out3 = (double*)(out_states__p_slice + 2 * out_states_p_pitch);
-        double* row_out4 = (double*)(out_states__p_slice + 3 * out_states_p_pitch);
-        double* row_out5 = (double*)(out_states__p_slice + 4 * out_states_p_pitch);
-        double* row_out6 = (double*)(out_states__p_slice + 5 * out_states_p_pitch);
+        char* out_states_p_slice = out_states_p_ptr + l * out_states_p_slicePitch;
+        double* row_out1 = (double*)(out_states_p_slice + 0 * out_states_p_pitch);
+        double* row_out2 = (double*)(out_states_p_slice + 1 * out_states_p_pitch);
+        double* row_out3 = (double*)(out_states_p_slice + 2 * out_states_p_pitch);
+        double* row_out4 = (double*)(out_states_p_slice + 3 * out_states_p_pitch);
+        double* row_out5 = (double*)(out_states_p_slice + 4 * out_states_p_pitch);
+        double* row_out6 = (double*)(out_states_p_slice + 5 * out_states_p_pitch);
 
         double * row_del_bi = (double*)((char*)del_bi + 0 * out_states_p_pitch);
         double * row_del_ai = (double*)((char*)del_ai + 0 * out_states_p_pitch);
         double * row_del_pi = (double*)((char*)del_pi + 0 * out_states_p_pitch);
         double * row_del_ci = (double*)((char*)del_ci + 0 * out_states_p_pitch);
+
+        char* Ji_slice = Ji_ptr + l * Ji_slicePitch;
+
 
         for (int k = j - 1; k < 400; k++) {
             // pc(1)=pc(1)+0.5*dt*(0.025*del_bi(1,k,l)^2+0.25*((out_states_p(1,j,l)-(U0_opt+U_opt(j)))^2)+(1e-06)*((out_states_p(4,j,l)-X_optdel(j))^2));   %Calculates path cost for each trajectory
@@ -385,6 +415,40 @@ void helper1(cudaPitchedPtr states_p, cudaPitchedPtr out_states_p, double dt, in
             // pc(4)=pc(4)+0.5*dt*(0.025*del_ci(1,k,l)^2+0.25*((out_states_p(4,j,l)-(W0_opt+W_opt(j)))^2)+0.0025*((out_states_p(6,j,l)-Z_opt(j))^2));   %Calculates path cost for each trajectory
             pc[3] = pc[3] + 0.5 * dt * (0.025 * row_del_ci[k] * row_del_ci[k] + 0.25 * ((row_out4[j - 1]) - (W0_opt + W_opt[j - 1])) * ((row_out4[j - 1]) - (W0_opt + W_opt[j - 1])) + (0.00025) *(row_out6[j - 1] - Z_opt[j - 1]) * (row_out5[j - 1] - Z_opt[j - 1]));
         }
+        pathcost[0][j - 1][l] = pc[0];
+        pathcost[1][j - 1][l] = pc[1];
+        pathcost[2][j - 1][l] = pc[2];
+        pathcost[3][j - 1][l] = pc[3];
+
+        if (abs(row_out1[399]-(us0+us[399]))>band_u && abs(row_out4[399] + xeq[399]+X0_opt-(xseq[399]+xs[399]))>band_x &&
+                abs(row_out2[399]-vs[399])>band_v && abs(row_out5[399]+Y0_opt-ys[399])>band_y &&
+                abs(row_out3[399]-ws[j - 1])>band_w && abs(row_out6[399]+Z0_opt-zs[j - 1])>band_z) {
+            for (int indx = 0; indx < 4; indx++) {
+                double* row_Ji = (double*)(Ji_slice + indx * Ji_pitch);
+                row_Ji[j - 1] = 0;
+            }
+            *n = *n + 1;
+        } else {
+            double* row_Ji1 = (double*)(Ji_slice + 0 * Ji_pitch);
+            double* row_Ji2 = (double*)(Ji_slice + 1 * Ji_pitch);
+            double* row_Ji3 = (double*)(Ji_slice + 2 * Ji_pitch);
+            double* row_Ji4 = (double*)(Ji_slice + 3 * Ji_pitch);
+
+            row_Ji1[j - 1] = pathcost[0][j - 1][l] + pathcost[1][j - 1][l] + pathcost[2][j - 1][l] + pathcost[3][j - 1][l] + F[j - 1] *
+            ((row_out1[399] - (us0 + us[399])) * (row_out1[399] - (us0 + us[399]))
+                + (row_out4[399] + xeq[399] + X0_opt - xseq[399] - xs[399]) * (row_out4[399] + xeq[399] + X0_opt - xseq[399] - xs[399]));
+
+            row_Ji2[j - 1] = pathcost[0][j - 1][l] + pathcost[1][j - 1][l] + pathcost[2][j - 1][l] + pathcost[3][j - 1][l] + F[j - 1] *
+                (row_out2[399] - vs[399]) * (row_out2[399] - vs[399]) +
+                (row_out5[399] + Y0_opt - ys[399]) * (row_out5[399] + Y0_opt - ys[399]);
+
+            row_Ji3[j - 1] = pathcost[0][j - 1][l] + pathcost[1][j - 1][l] + pathcost[2][j - 1][l] + pathcost[3][j - 1][l];
+            row_Ji4[j - 1] = pathcost[0][j - 1][l] + pathcost[1][j - 1][l] + pathcost[2][j - 1][l] + pathcost[3][j - 1][l] + F[j - 1] *
+                (row_out3[399] - ws[j - 1]) * (row_out3[399] - ws[j - 1]) +
+                (row_out6[399] + Z0_opt - zs[j - 1]) * (row_out6[399] + Z0_opt - zs[j - 1]);
+        }
+
+
     }
 }
 
@@ -393,6 +457,13 @@ void helper1(cudaPitchedPtr states_p, cudaPitchedPtr out_states_p, double dt, in
 
 int main(void)
 {
+    clock_t begin = clock();
+
+    //variables
+    double rb_inc = 0.1;
+    double ra_inc = 0.1;
+    double rp_inc = 0.1;
+    double rc_inc = 0.1;
 
     //some variables to add values
     double *rb, *ra, *rp, *rc;
@@ -429,6 +500,11 @@ int main(void)
     cudaMalloc(&W_opt, optdel_size);
     double* Z_opt;
     cudaMalloc(&Z_opt, optdel_size);
+
+    double* cycles;
+    cudaMalloc(&cycles, optdel_size);
+    double* np;
+    cudaMalloc(&np, optdel_size);
 
 
     //2D stuff
@@ -497,6 +573,11 @@ int main(void)
     cudaMalloc3D(&out_states_p, extent3);
     fill3D<<<100, 40000>>>(out_states_p, 400, 6, 100);
 
+    cudaExtent extent4 = make_cudaExtent(400 * sizeof(double), 4, 100);
+    cudaPitchedPtr Ji;
+    cudaMalloc3D(&Ji, extent4);
+    fill3D<<<100, 40000>>>(Ji, 400, 4, 100);
+
 
     //other stuff
     double trim_val[] = {67.5077, -0.0585, 3.3319, -0.0175, 0.0493, 0};
@@ -536,21 +617,33 @@ int main(void)
             double dt = 0.1;
             predicted_vehicle_state<<<100, 40000>>>(states_p, out_states_p, del_bi, del_ai, del_pi, del_ci, dt, j, Afull_ptr, Bfull_ptr, trim_val);
 
-            // n = 0;  //Starts counter for trajectories with final position outside of specified band
-            // //Calculates the performance index for each trajectory
-            // for (int l = 2; l <= 100; l++) {
-            //     double pc[] = {0, 0, 0, 0};
-            //     for (int k = j; k <= 400; k++) {
-            //         pc[0] =
-            //     }
-            // }
+            helper1<<<100, 40000>>>(Ji, out_states_p, dt, j, del_bi, del_ai,
+                del_pi, del_ci, X_optdel, U_opt, V_opt, Y_opt, W_opt, Z_opt,
+                &n);
+
+            rb[j - 1] = rb[j - 1] + rb_inc;
+            ra[j - 1] = ra[j - 1] + ra_inc;
+            rp[j - 1] = rp[j - 1] + rp_inc;
+            rc[j - 1] = rc[j - 1] + rc_inc;
+            m++;
             // break;
-            helper1<<<100, 40000>>>(states_p, out_states_p, dt, j, del_bi, del_ai,
-                del_pi, del_ci, X_optdel, U_opt, V_opt, Y_opt, W_opt, Z_opt);
 
 
         }
+
+        //Calculation of Cost is done here
+        // cycles[j - 1] = m;
+        // np[j - 1] = 100 - n;
+
+
     }
+
+    cudaFree(U_opt);
+    cudaFree(V_opt);
+    cudaFree(W_opt);
+    cudaFree(X_optdel);
+    cudaFree(Y_opt);
+    cudaFree(Z_opt);
 
     cudaFree(rb);
     cudaFree(ra);
@@ -574,5 +667,8 @@ int main(void)
 
     // cudaFree(del_con);
 
+    clock_t end = clock();
+    double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+    printf("Path Integral took: %f seconds \n", time_spent);
     return 0;
 }

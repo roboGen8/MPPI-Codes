@@ -1,8 +1,10 @@
 #include <stdio.h>
+#include <time.h>
 // #include "myLib.h"
 
 
 int main() {
+    clock_t begin = clock();
     double Afull[12][12] = {{0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.9988, -0.0009, 0.0493, 0.0000, 0.0000, 0.0000},
     {0.0000, 0.0000, 0.0000, 3.3325, 0.0000, -67.5899, 0.0000, -0.9998, -0.0175, 0.0000, 0.0000, 0.0000},
     {0.0000, 0.0000, 0.0000, 0.0000, 67.5899, 0.0000, 0.0493, 0.0175, -0.9986, 0.0000, 0.0000, 0.0000},
@@ -359,7 +361,9 @@ int main() {
 
     }
 
-    printf("%d", del_r);
+    clock_t end = clock();
+    double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+    printf("Before Path Integral took : %f seconds \n", time_spent);
 
 
 

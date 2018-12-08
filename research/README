@@ -1,0 +1,15 @@
+Model Predictive Path Integral Approach for Trajectory Guidance of Rotorcraft Shipboard landing
+
+You need to have gcc and nvcc to run the programs
+For the C implementation, type:
+make
+./MPPI
+For the CUDA C implementation, type:
+nvcc pathInegral.cu -o pathIntegral
+./pathIntegral
+
+You should see the running times of the programs printed
+
+If there is any problem compiling or running the program,
+you need to check if you have the necessary software downloaded on your machine
+you should also check if you have the allowed GPU cards to run CUDA
